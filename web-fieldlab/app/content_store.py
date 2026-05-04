@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import shutil
 import sqlite3
 from datetime import datetime
@@ -11,8 +10,11 @@ from config import Config
 from content_seed import (
     AUTH_NOTES,
     AUTH_ORDERS,
+    AUTH_REPORTS,
     AUTH_TICKETS,
     AUTH_USERS,
+    CSRF_ACCOUNTS,
+    CSRF_TRANSFER_LOGS,
     INJECTION_AUDIT_LOG,
     INJECTION_SNIPPETS,
     JSONP_PROFILES,
@@ -53,6 +55,7 @@ SCHEMA = [
     "CREATE TABLE IF NOT EXISTS auth_orders (order_id INTEGER PRIMARY KEY, owner_user_id INTEGER NOT NULL, item_name TEXT NOT NULL, total_amount REAL NOT NULL, secret_note TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS auth_notes (note_id INTEGER PRIMARY KEY, owner_user_id INTEGER NOT NULL, body TEXT NOT NULL, updated_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS auth_tickets (ticket_id INTEGER PRIMARY KEY, owner_user_id INTEGER NOT NULL, subject TEXT NOT NULL, status TEXT NOT NULL, internal_note TEXT NOT NULL, updated_at TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS auth_reports (report_id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS upload_entries (upload_id INTEGER PRIMARY KEY AUTOINCREMENT, lab_slug TEXT NOT NULL, original_name TEXT NOT NULL, stored_name TEXT NOT NULL, declared_type TEXT NOT NULL, stored_path TEXT NOT NULL, note TEXT NOT NULL, is_public INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS payment_products (product_id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL NOT NULL, stock INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS payment_wallets (owner_label TEXT PRIMARY KEY, balance REAL NOT NULL, credits INTEGER NOT NULL)",
@@ -66,19 +69,22 @@ SCHEMA = [
     "CREATE TABLE IF NOT EXISTS race_wallets (owner TEXT PRIMARY KEY, balance REAL NOT NULL)",
     "CREATE TABLE IF NOT EXISTS race_seats (event_name TEXT PRIMARY KEY, remaining INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS race_logs (log_id INTEGER PRIMARY KEY AUTOINCREMENT, lab_slug TEXT NOT NULL, attempts INTEGER NOT NULL, success_count INTEGER NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS csrf_accounts (username TEXT PRIMARY KEY, balance REAL NOT NULL, email_pref TEXT NOT NULL, mfa_enabled INTEGER NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS csrf_transfer_logs (log_id INTEGER PRIMARY KEY AUTOINCREMENT, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount REAL NOT NULL, note TEXT NOT NULL, source TEXT NOT NULL, created_at TEXT NOT NULL)",
 ]
 
 RESET_GROUPS = {
     'xss': ['xss_comments', 'xss_profiles', 'xss_bookmarks', 'xss_markdown_notes', 'xss_svg_snippets', 'xss_api_cards', 'browser_events'],
     'ssti': ['ssti_templates', 'ssti_themes'],
     'ssrf': ['ssrf_logs'],
-    'authz': ['auth_users', 'auth_orders', 'auth_notes', 'auth_tickets'],
+    'authz': ['auth_users', 'auth_orders', 'auth_notes', 'auth_tickets', 'auth_reports'],
     'upload': ['upload_entries'],
     'payment': ['payment_products', 'payment_wallets', 'payment_coupons', 'payment_orders'],
     'injection': ['injection_snippets'],
     'xxe': ['xxe_documents'],
     'jsonp': ['jsonp_profiles'],
     'race': ['race_coupons', 'race_inventory', 'race_wallets', 'race_seats', 'race_logs'],
+    'csrf': ['csrf_accounts', 'csrf_transfer_logs'],
     'events': ['browser_events'],
     'stored-comments': ['xss_comments'],
     'second-order-signature': ['xss_profiles'],
@@ -101,6 +107,8 @@ RESET_GROUPS = {
     'race-inventory': ['race_inventory', 'race_logs'],
     'race-wallets': ['race_wallets', 'race_logs'],
     'race-seats': ['race_seats', 'race_logs'],
+    'csrf-wallets': ['csrf_accounts'],
+    'csrf-logs': ['csrf_transfer_logs'],
 }
 
 
@@ -155,13 +163,12 @@ def connect() -> sqlite3.Connection:
 
 def init_content_db(force: bool = False) -> None:
     Config.ensure_paths()
-    root = data_root()
     db_existed = Path(Config.CONTENT_DB_PATH).exists()
     with connect() as conn:
         for statement in SCHEMA:
             conn.execute(statement)
         needs_seed = force or not db_existed
-        for probe in ['SELECT COUNT(*) FROM auth_users', 'SELECT COUNT(*) FROM payment_products', 'SELECT COUNT(*) FROM jsonp_profiles', 'SELECT COUNT(*) FROM race_coupons', 'SELECT COUNT(*) FROM upload_entries']:
+        for probe in ['SELECT COUNT(*) FROM auth_users', 'SELECT COUNT(*) FROM payment_products', 'SELECT COUNT(*) FROM jsonp_profiles', 'SELECT COUNT(*) FROM race_coupons', 'SELECT COUNT(*) FROM upload_entries', 'SELECT COUNT(*) FROM csrf_accounts']:
             if not fetch_scalar(probe, conn):
                 needs_seed = True
                 break
@@ -195,6 +202,7 @@ def _seed_tables(conn: sqlite3.Connection, now: str) -> None:
     conn.executemany('INSERT INTO auth_orders (order_id, owner_user_id, item_name, total_amount, secret_note) VALUES (:order_id, :owner_user_id, :item_name, :total_amount, :secret_note)', AUTH_ORDERS)
     conn.executemany('INSERT INTO auth_notes (note_id, owner_user_id, body, updated_at) VALUES (:note_id, :owner_user_id, :body, :updated_at)', [{**item, 'updated_at': now} for item in AUTH_NOTES])
     conn.executemany('INSERT INTO auth_tickets (ticket_id, owner_user_id, subject, status, internal_note, updated_at) VALUES (:ticket_id, :owner_user_id, :subject, :status, :internal_note, :updated_at)', [{**item, 'updated_at': now} for item in AUTH_TICKETS])
+    conn.executemany('INSERT INTO auth_reports (report_id, title, body) VALUES (:report_id, :title, :body)', AUTH_REPORTS)
     conn.executemany('INSERT INTO upload_entries (lab_slug, original_name, stored_name, declared_type, stored_path, note, is_public, created_at) VALUES (:lab_slug, :original_name, :stored_name, :declared_type, :stored_path, :note, :is_public, :created_at)', [{**item, 'created_at': now} for item in UPLOAD_SEEDS])
     conn.executemany('INSERT INTO payment_products (product_id, name, price, stock) VALUES (:product_id, :name, :price, :stock)', PAYMENT_PRODUCTS)
     conn.executemany('INSERT INTO payment_wallets (owner_label, balance, credits) VALUES (:owner_label, :balance, :credits)', PAYMENT_WALLETS)
@@ -207,10 +215,12 @@ def _seed_tables(conn: sqlite3.Connection, now: str) -> None:
     conn.executemany('INSERT INTO race_inventory (sku, stock) VALUES (:sku, :stock)', RACE_INVENTORY)
     conn.executemany('INSERT INTO race_wallets (owner, balance) VALUES (:owner, :balance)', RACE_WALLETS)
     conn.executemany('INSERT INTO race_seats (event_name, remaining) VALUES (:event_name, :remaining)', RACE_SEATS)
+    conn.executemany('INSERT INTO csrf_accounts (username, balance, email_pref, mfa_enabled) VALUES (:username, :balance, :email_pref, :mfa_enabled)', CSRF_ACCOUNTS)
+    conn.executemany('INSERT INTO csrf_transfer_logs (from_user, to_user, amount, note, source, created_at) VALUES (:from_user, :to_user, :amount, :note, :source, :created_at)', [{**item, 'created_at': now} for item in CSRF_TRANSFER_LOGS])
 
 
 def seed_all(conn: sqlite3.Connection) -> None:
-    for table in ['xss_comments','xss_profiles','xss_bookmarks','xss_markdown_notes','xss_svg_snippets','xss_api_cards','browser_events','ssti_templates','ssti_themes','ssrf_logs','auth_users','auth_orders','auth_notes','auth_tickets','upload_entries','payment_products','payment_wallets','payment_coupons','payment_orders','injection_snippets','xxe_documents','jsonp_profiles','race_coupons','race_inventory','race_wallets','race_seats','race_logs']:
+    for table in ['xss_comments','xss_profiles','xss_bookmarks','xss_markdown_notes','xss_svg_snippets','xss_api_cards','browser_events','ssti_templates','ssti_themes','ssrf_logs','auth_users','auth_orders','auth_notes','auth_tickets','auth_reports','upload_entries','payment_products','payment_wallets','payment_coupons','payment_orders','injection_snippets','xxe_documents','jsonp_profiles','race_coupons','race_inventory','race_wallets','race_seats','race_logs','csrf_accounts','csrf_transfer_logs']:
         conn.execute(f'DELETE FROM {table}')
     wipe_upload_files()
     _seed_tables(conn, utc_now())
@@ -265,6 +275,7 @@ def reset_content(target: str) -> None:
                 conn.executemany('INSERT INTO auth_tickets (ticket_id, owner_user_id, subject, status, internal_note, updated_at) VALUES (:ticket_id, :owner_user_id, :subject, :status, :internal_note, :updated_at)', [{**item, 'updated_at': now} for item in AUTH_TICKETS])
             if target == 'authz':
                 conn.executemany('INSERT INTO auth_users (user_id, username, display_name, role) VALUES (:user_id, :username, :display_name, :role)', AUTH_USERS)
+                conn.executemany('INSERT INTO auth_reports (report_id, title, body) VALUES (:report_id, :title, :body)', AUTH_REPORTS)
             if target in {'upload', 'upload-public'}:
                 wipe_upload_files()
                 conn.executemany('INSERT INTO upload_entries (lab_slug, original_name, stored_name, declared_type, stored_path, note, is_public, created_at) VALUES (:lab_slug, :original_name, :stored_name, :declared_type, :stored_path, :note, :is_public, :created_at)', [{**item, 'created_at': now} for item in UPLOAD_SEEDS])
@@ -295,4 +306,8 @@ def reset_content(target: str) -> None:
                 conn.executemany('INSERT INTO race_wallets (owner, balance) VALUES (:owner, :balance)', RACE_WALLETS)
             if target in {'race', 'race-seats'}:
                 conn.executemany('INSERT INTO race_seats (event_name, remaining) VALUES (:event_name, :remaining)', RACE_SEATS)
+            if target in {'csrf', 'csrf-wallets'}:
+                conn.executemany('INSERT INTO csrf_accounts (username, balance, email_pref, mfa_enabled) VALUES (:username, :balance, :email_pref, :mfa_enabled)', CSRF_ACCOUNTS)
+            if target in {'csrf', 'csrf-logs'}:
+                conn.executemany('INSERT INTO csrf_transfer_logs (from_user, to_user, amount, note, source, created_at) VALUES (:from_user, :to_user, :amount, :note, :source, :created_at)', [{**item, 'created_at': now} for item in CSRF_TRANSFER_LOGS])
         conn.commit()

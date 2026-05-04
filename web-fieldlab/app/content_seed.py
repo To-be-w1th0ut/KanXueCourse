@@ -66,6 +66,10 @@ AUTH_TICKETS = [
     {"ticket_id": 3002, "owner_user_id": 2, "subject": "Request score review", "status": "open", "internal_note": "需老师或管理员处理"},
 ]
 
+AUTH_REPORTS = [
+    {"report_id": 4001, "title": "discipline-board", "body": "Discipline board with private scores and conduct notes."},
+]
+
 UPLOAD_SEEDS = [
     {"lab_slug": "public-html", "original_name": "welcome.txt", "stored_name": "welcome.txt", "declared_type": "text/plain", "stored_path": "uploads/public/welcome.txt", "note": "默认示例文件", "is_public": 1},
 ]
@@ -105,6 +109,15 @@ RACE_COUPONS = [{"code": "RACE-ONCE", "remaining_uses": 1}]
 RACE_INVENTORY = [{"sku": "hoodie-one", "stock": 1}]
 RACE_WALLETS = [{"owner": "alice", "balance": 40.0}]
 RACE_SEATS = [{"event_name": "masterclass-seat", "remaining": 1}]
+
+CSRF_ACCOUNTS = [
+    {"username": "alice", "balance": 800.0, "email_pref": "alice@class.local", "mfa_enabled": 1},
+    {"username": "bob", "balance": 320.0, "email_pref": "bob@class.local", "mfa_enabled": 0},
+]
+
+CSRF_TRANSFER_LOGS = [
+    {"from_user": "alice", "to_user": "bob", "amount": 0.0, "note": "initial state", "source": "seed"},
+]
 
 UPLOAD_BANNER_HTML = "<div class='preview-banner'><strong>Upload Bulletin</strong><p>默认公告：禁止上传可执行脚本。</p></div>"
 INJECTION_AUDIT_LOG = """INFO boot complete

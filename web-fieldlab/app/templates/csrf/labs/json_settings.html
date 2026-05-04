@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'csrf/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card" id="csrf-json-lab" data-mode="{{ mode }}">
+    <h2>账户偏好 JSON API</h2>
+    <div class="form-grid three-col">
+      <label>email_pref<input type="text" id="csrf-email-pref" value="{{ account.email_pref }}"></label>
+      <button class="button-primary" id="csrf-json-submit" type="button">提交 JSON 更新</button>
+      <a class="button-secondary" href="/labs/csrf/attack-settings?mode={{ mode }}" target="_blank">打开恶意脚本页</a>
+    </div>
+    <pre class="code-panel">safe token = {{ csrf_token_value }}</pre>
+    <pre id="csrf-json-response" class="code-panel">等待提交...</pre>
+    <div class="stack-list">{% for row in logs %}<article class="feed-card"><div class="feed-meta"><strong>{{ row.note }}</strong><span class="muted mono">{{ row.created_at }}</span></div><p>{{ row.source }}</p></article>{% endfor %}</div>
+  </section>
+</div>
+<script>window.CsrfJsonLab = { endpoint: '/api/csrf/settings', mode: '{{ mode }}', token: '{{ csrf_token_value }}' };</script>
+{% include 'shared_hints.html' %}
+{% endblock %}

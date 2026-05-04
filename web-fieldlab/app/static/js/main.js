@@ -174,4 +174,21 @@
     injectJsonp(`${window.JsonpLegacy.endpoint}?mode=${window.JsonpLegacy.mode}&callback=${encodeURIComponent(callback)}`);
   });
 
+
+  document.getElementById('csrf-json-submit')?.addEventListener('click', async () => {
+    const emailPref = document.getElementById('csrf-email-pref').value;
+    const headers = { 'Content-Type': 'application/json' };
+    if (window.CsrfJsonLab.mode === 'safe') {
+      headers['X-CSRF-Token'] = window.CsrfJsonLab.token;
+    }
+    const response = await fetch(`${window.CsrfJsonLab.endpoint}?mode=${window.CsrfJsonLab.mode}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({ email_pref: emailPref }),
+    });
+    const data = await response.json();
+    document.getElementById('csrf-json-response').textContent = JSON.stringify(data, null, 2);
+  });
+
 })();

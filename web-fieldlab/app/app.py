@@ -7,6 +7,7 @@ from flask import Flask, jsonify, render_template
 from config import Config
 from content_store import init_content_db, query_one
 from domains.authz import bp as authz_bp, domain_info as authz_info, domain_taxonomy as authz_taxonomy
+from domains.csrf import bp as csrf_bp, domain_info as csrf_info, domain_taxonomy as csrf_taxonomy
 from domains.injection import bp as injection_bp, domain_info as injection_info, domain_taxonomy as injection_taxonomy
 from domains.jsonp import bp as jsonp_bp, domain_info as jsonp_info, domain_taxonomy as jsonp_taxonomy
 from domains.payment import bp as payment_bp, domain_info as payment_info, domain_taxonomy as payment_taxonomy
@@ -25,16 +26,17 @@ app.config.from_object(Config)
 app.secret_key = Config.SECRET_KEY
 init_content_db(force=False)
 
-for blueprint in [sqli_bp, xss_bp, ssti_bp, ssrf_bp, authz_bp, upload_bp, payment_bp, injection_bp, xxe_bp, jsonp_bp, race_bp]:
+for blueprint in [sqli_bp, xss_bp, ssti_bp, ssrf_bp, authz_bp, csrf_bp, upload_bp, payment_bp, injection_bp, xxe_bp, jsonp_bp, race_bp]:
     app.register_blueprint(blueprint)
 
-DOMAIN_ORDER = ['sqli', 'xss', 'ssti', 'ssrf', 'authz', 'upload', 'payment', 'injection', 'xxe', 'jsonp', 'race']
+DOMAIN_ORDER = ['sqli', 'xss', 'ssti', 'ssrf', 'authz', 'csrf', 'upload', 'payment', 'injection', 'xxe', 'jsonp', 'race']
 DOMAIN_REGISTRY = {
     'sqli': {**sqli_info(), 'taxonomy_builder': sqli_taxonomy},
     'xss': {**xss_info(), 'taxonomy_builder': xss_taxonomy},
     'ssti': {**ssti_info(), 'taxonomy_builder': ssti_taxonomy},
     'ssrf': {**ssrf_info(), 'taxonomy_builder': ssrf_taxonomy},
     'authz': {**authz_info(), 'taxonomy_builder': authz_taxonomy},
+    'csrf': {**csrf_info(), 'taxonomy_builder': csrf_taxonomy},
     'upload': {**upload_info(), 'taxonomy_builder': upload_taxonomy},
     'payment': {**payment_info(), 'taxonomy_builder': payment_taxonomy},
     'injection': {**injection_info(), 'taxonomy_builder': injection_taxonomy},

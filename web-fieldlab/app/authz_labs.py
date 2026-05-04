@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 GROUP_ORDER = [
+    '未授权访问',
     '水平越权：读取',
     '水平越权：修改',
     '垂直越权：页面访问',
@@ -10,6 +11,26 @@ GROUP_ORDER = [
 ]
 
 LABS = [
+    {
+        'domain': 'authz',
+        'slug': 'unauth-report',
+        'title': 'L00 未授权访问：公开敏感报表',
+        'subtitle': '不是所有授权问题都发生在“已登录用户”之间，有些页面甚至完全没做登录校验。',
+        'difficulty': '基础',
+        'story': '教务纪律报表页原本以为“知道链接的人很少”，结果后端完全没有登录检查。',
+        'endpoint': '/labs/authz/unauth-report',
+        'primary_class': '未授权访问',
+        'secondary_class': '无登录校验 / 直接暴露敏感页面',
+        'timing_class': '立即触发',
+        'defense_focus': '先做认证，再做授权',
+        'teacher_path': '把“未授权”与“越权”区分开：前者连登录门槛都没有，后者是登录后权限边界错误。',
+        'hints': [
+            '先确认访问敏感页面前是否要求登录。',
+            '如果连登录状态都不检查，就不是对象级越权，而是未授权暴露。',
+            '安全模式至少要先验证会话，再谈角色或对象归属。',
+        ],
+        'reset': '无需重置；该关卡默认只读。',
+    },
     {
         'domain': 'authz',
         'slug': 'horizontal-orders',

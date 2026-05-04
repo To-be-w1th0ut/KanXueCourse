@@ -21,6 +21,7 @@
 ./scripts/reset_lab.sh ssti
 ./scripts/reset_lab.sh ssrf
 ./scripts/reset_lab.sh authz
+./scripts/reset_lab.sh csrf
 ./scripts/reset_lab.sh upload
 ./scripts/reset_lab.sh payment
 ./scripts/reset_lab.sh injection
@@ -42,6 +43,8 @@
 ./scripts/reset_lab.sh authz-orders
 ./scripts/reset_lab.sh authz-notes
 ./scripts/reset_lab.sh authz-tickets
+./scripts/reset_lab.sh csrf-wallets
+./scripts/reset_lab.sh csrf-logs
 ./scripts/reset_lab.sh upload-public
 ./scripts/reset_lab.sh payment-wallet
 ./scripts/reset_lab.sh payment-coupons

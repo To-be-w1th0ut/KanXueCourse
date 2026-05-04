@@ -1,0 +1,9 @@
+<section class="info-card">
+  <h2>受害者账户切换</h2>
+  <div class="inline-button-row wrap-row">
+    {% for row in accounts %}
+      <a class="nav-pill {% if csrf_account and csrf_account.username == row.username %}active{% endif %}" href="/labs/csrf/switch/{{ row.username }}?next={{ request.path }}&mode={{ mode }}">{{ row.username }}</a>
+    {% endfor %}
+  </div>
+  <p class="muted">当前浏览器持有会话：<strong>{{ csrf_account.username }}</strong> / balance={{ csrf_account.balance }} / mfa={{ csrf_account.mfa_enabled }}</p>
+</section>

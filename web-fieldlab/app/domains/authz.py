@@ -26,30 +26,22 @@ def get_current_user():
 
 
 def render_lab(template_name: str, slug: str, **context):
-    return render_template(
-        f'authz/labs/{template_name}',
-        lab=get_lab(slug),
-        mode=current_mode(),
-        show_event_dock=False,
-        auth_users=get_auth_users(),
-        current_auth_user=get_current_user(),
-        **context,
-    )
+    return render_template(f'authz/labs/{template_name}', lab=get_lab(slug), mode=current_mode(), show_event_dock=False, auth_users=get_auth_users(), current_auth_user=get_current_user(), **context)
 
 
 def domain_info() -> dict:
     return {
         'code': 'AUTHZ',
         'title': '越权轨道',
-        'description': '覆盖水平越权（读取/修改）与垂直越权（页面访问/敏感动作）。',
-        'summary': '把“已登录”与“有权访问该对象/动作”分开讲清楚。',
+        'description': '覆盖未授权访问、水平越权（读取/修改）与垂直越权（页面/敏感动作）。',
+        'summary': '把“未认证、已认证、已授权”三层边界拆开讲清楚。',
         'level': '进阶',
         'count': len(LABS),
         'href': '/domains/authz',
         'teaching_points': [
-            '先讲对象级授权，再讲角色级授权。',
-            '把“页面入口隐藏”和“后端鉴权”分开讲。',
-            '强调读和写都需要独立授权判断。',
+            '先区分未授权访问与已登录后的越权。',
+            '对象级授权与角色级授权分开讲。',
+            '强调读和写、页面访问和敏感动作都需要独立判断。',
         ],
     }
 
@@ -58,6 +50,23 @@ def domain_info() -> dict:
 def switch_user(user_id: int):
     session['auth_user_id'] = user_id
     return redirect(request.args.get('next') or '/domains/authz')
+
+
+@bp.route('/labs/authz/logout')
+def authz_logout():
+    session.pop('auth_user_id', None)
+    return redirect(request.args.get('next') or '/domains/authz')
+
+
+@bp.route('/labs/authz/unauth-report')
+def unauth_report():
+    report = None
+    error = None
+    if current_mode() == 'safe' and not session.get('auth_user_id'):
+        error = '安全模式：未登录用户不能查看纪律报表。'
+    else:
+        report = query_one('SELECT * FROM auth_reports ORDER BY report_id LIMIT 1')
+    return render_lab('unauth_report.html', 'unauth-report', report=report, error=error)
 
 
 @bp.route('/labs/authz/horizontal-orders')

@@ -5,13 +5,13 @@
   <div class="hero-grid">
     <div>
       <div class="eyebrow amber">统一教学环境</div>
-      <h1>一套 Web 环境，覆盖 <span>十一条漏洞教学轨道</span></h1>
+      <h1>一套 Web 环境，覆盖 <span>十二条漏洞教学轨道</span></h1>
       <p class="lead">
-        现在不止统一了 SQL 注入、XSS、SSTI、SSRF 与越权，还补上文件上传、支付逻辑、代码/命令注入、XXE、JSONP 与条件竞争。一个站点里完整讲清输入边界、状态机、解释器与授权面。
+        现在统一环境中不仅包含 SQL 注入、XSS、SSTI、SSRF、越权，还补上 CSRF、文件上传、支付逻辑、代码/命令注入、XXE、JSONP 和条件竞争。可以把输入边界、状态机、浏览器自动带身份、解释器与授权面放在同一课堂里系统讲透。
       </p>
       <div class="cta-row">
         <a class="button-primary" href="/labs">进入总览</a>
-        <a class="button-secondary" href="/domains/payment">从业务逻辑漏洞轨道开始</a>
+        <a class="button-secondary" href="/domains/csrf">从 CSRF 轨道开始</a>
       </div>
     </div>
     <aside class="signal-card signal-card-xss">
@@ -24,7 +24,7 @@
       </ul>
       <div class="terminal-slab">
         <code>统一入口：http://127.0.0.1:{{ app_public_port }}</code>
-        <code>MariaDB + SQLite + 内部 SSRF 服务</code>
+        <code>MariaDB + SQLite + 内部服务</code>
         <code>支持局部 / 全量 reset</code>
       </div>
     </aside>

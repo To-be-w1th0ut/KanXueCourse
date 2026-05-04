@@ -20,11 +20,11 @@ case "$TARGET" in
   sqli-filters)
     docker compose exec -T db mariadb -uroot -p"${MYSQL_ROOT_PASSWORD:-labroot}" sql_training < "$ROOT/db/resets/reset_saved_filters.sql"
     ;;
-  xss|ssti|ssrf|authz|upload|payment|injection|xxe|jsonp|race|events|stored-comments|second-order-signature|markdown-preview|svg-preview|url-bookmarks|ssti-mail|ssti-theme|authz-orders|authz-notes|authz-tickets|upload-public|payment-wallet|payment-coupons|payment-orders|injection-snippets|xxe-docs|jsonp-profiles|race-coupons|race-inventory|race-wallets|race-seats)
+  xss|ssti|ssrf|authz|csrf|upload|payment|injection|xxe|jsonp|race|events|stored-comments|second-order-signature|markdown-preview|svg-preview|url-bookmarks|ssti-mail|ssti-theme|authz-orders|authz-notes|authz-tickets|upload-public|payment-wallet|payment-coupons|payment-orders|injection-snippets|xxe-docs|jsonp-profiles|race-coupons|race-inventory|race-wallets|race-seats|csrf-wallets|csrf-logs)
     CONTENT_DB_PATH="$ROOT/app/data/content.db" python3 app/reset_content.py "$TARGET"
     ;;
   *)
-    echo "用法: ./scripts/reset_lab.sh [all|sqli|sqli-grades|sqli-filters|xss|ssti|ssrf|authz|upload|payment|injection|xxe|jsonp|race|events|stored-comments|second-order-signature|markdown-preview|svg-preview|url-bookmarks|ssti-mail|ssti-theme|authz-orders|authz-notes|authz-tickets|upload-public|payment-wallet|payment-coupons|payment-orders|injection-snippets|xxe-docs|jsonp-profiles|race-coupons|race-inventory|race-wallets|race-seats]" >&2
+    echo "用法: ./scripts/reset_lab.sh [all|sqli|sqli-grades|sqli-filters|xss|ssti|ssrf|authz|csrf|upload|payment|injection|xxe|jsonp|race|events|stored-comments|second-order-signature|markdown-preview|svg-preview|url-bookmarks|ssti-mail|ssti-theme|authz-orders|authz-notes|authz-tickets|upload-public|payment-wallet|payment-coupons|payment-orders|injection-snippets|xxe-docs|jsonp-profiles|race-coupons|race-inventory|race-wallets|race-seats|csrf-wallets|csrf-logs]" >&2
     exit 1
     ;;
 esac

