@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>课件公告横幅</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>message<input type="text" name="message" value="{{ message }}" placeholder="例如：欢迎 WebSec-2 班"></label>
+      <button class="button-primary" type="submit">渲染横幅</button>
+    </form>
+    <div class="preview-stage">
+      <div class="preview-banner">
+        {% if rendered_message is not none %}
+          {{ rendered_message }}
+        {% else %}
+          <span class="muted">这里会显示公告横幅</span>
+        {% endif %}
+      </div>
+    </div>
+  </section>
+  <aside class="info-card">
+    <h2>课堂验证建议</h2>
+    <p>如果需要稳定证明脚本已经执行，可在 payload 中调用：</p>
+    <pre class="code-panel">fieldlab.record('reflected-html', 'banner executed')</pre>
+  </aside>
+</div>
+{% include 'partials/hints.html' %}
+{% endblock %}

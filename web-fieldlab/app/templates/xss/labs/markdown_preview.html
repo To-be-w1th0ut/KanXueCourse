@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>讲义草稿系统</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>title<input type="text" name="title" placeholder="例如：Week 5 Preview"></label>
+      <label>body<textarea name="body" rows="7" placeholder="输入 Markdown 或 HTML"></textarea></label>
+      <button class="button-primary" type="submit">保存并渲染</button>
+    </form>
+    <div class="stack-list">
+      {% for note in notes %}
+      <article class="feed-card">
+        <div class="feed-meta"><strong>{{ note.title }}</strong><span class="muted mono">{{ note.created_at }}</span></div>
+        <div class="feed-body markdown-surface">{{ note.rendered }}</div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

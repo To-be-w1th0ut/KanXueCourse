@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>欢迎卡片模板预览</h2>
+    <form method="get" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>source<textarea name="source" rows="6" placeholder="输入模板源码，例如 Hello {{ '{{ student_name }}' }}">{{ source }}</textarea></label>
+      <button class="button-primary" type="submit">渲染模板</button>
+    </form>
+    <pre class="code-panel">context = {{ context }}</pre>
+    {% if rendered is not none %}<div class="preview-stage"><div class="preview-banner">{{ rendered }}</div></div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

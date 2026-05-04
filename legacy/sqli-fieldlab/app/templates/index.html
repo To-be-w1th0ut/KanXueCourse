@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}FieldLab SQLi Range{% endblock %}
+{% block content %}
+<section class="hero-panel">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow amber">实战课堂版本</div>
+      <h1>FieldLab：按分类学组织的 <span>SQL 注入全景靶场</span></h1>
+      <p class="lead">
+        靶场不再只按“题名”堆关卡，而是按 SQL 注入的分类逻辑组织：先看注入落在 SQL 的哪里，再看何时触发、如何观察、最终造成什么影响。
+      </p>
+      <div class="cta-row">
+        <a class="button-primary" href="/labs">进入分类关卡台</a>
+        <a class="button-secondary" href="/labs/login-bypass?mode=vuln">从值上下文注入开始</a>
+      </div>
+    </div>
+    <aside class="signal-card">
+      <div class="signal-title">分类骨架</div>
+      <ul class="metric-list">
+        <li><span>{{ labs|length }}</span> 个独立关卡</li>
+        <li><span>{{ taxonomy.counts.positions }}</span> 类主轴（注入位置）</li>
+        <li><span>{{ taxonomy.counts.observations }}</span> 类观察方式</li>
+        <li><span>{{ taxonomy.counts.timings }}</span> 类生效时机</li>
+      </ul>
+      <div class="terminal-slab">
+        <code>主轴：值 / 结构 / 语句级 / 动态 SQL</code>
+        <code>副轴：时机 / 回显 / 影响 / 数据库差异</code>
+        <code>http://127.0.0.1:{{ app_public_port }}/labs</code>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="overview-grid">
+  <article class="feature-card">
+    <h2>先分“位置”</h2>
+    <p>先讲输入进入了 SQL 的哪个位置：值位、结构位、整条语句，还是动态 SQL。这样学生最容易理解为什么修复方式不同。</p>
+  </article>
+  <article class="feature-card">
+    <h2>再分“观察方式”</h2>
+    <p>UNION、报错、布尔盲注、时间盲注不再和业务效果混在一起，而是明确作为“攻击者如何观察结果”的维度。</p>
+  </article>
+  <article class="feature-card">
+    <h2>最后讲“业务影响”</h2>
+    <p>认证绕过、读数据、改数据、扩展到多语句，作为最终效果单独讲，避免把不同层级概念揉成一团。</p>
+  </article>
+</section>
+
+<section class="lab-wall">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow">主轴</div>
+      <h2>按“注入位置”组织关卡</h2>
+    </div>
+    <a href="/labs" class="text-link">查看完整分类 →</a>
+  </div>
+  {% for group in taxonomy.position_groups %}
+  <div class="group-panel">
+    <div class="group-head">
+      <h3>{{ group.name }}</h3>
+      <span class="muted mono">{{ group.labs|length }} labs</span>
+    </div>
+    <div class="lab-card-grid compact-grid">
+      {% for lab in group.labs %}
+      <a class="lab-card" href="{{ lab.endpoint }}?mode=vuln">
+        <div class="lab-card-top">
+          <span class="badge badge-{{ lab.difficulty }}">{{ lab.difficulty }}</span>
+          <span class="muted mono">{{ lab.observation_class }}</span>
+        </div>
+        <h3>{{ lab.title }}</h3>
+        <p>{{ lab.position_detail }}</p>
+        <div class="lab-card-foot">
+          <span>{{ lab.impact_class }} / {{ lab.timing_class }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endblock %}

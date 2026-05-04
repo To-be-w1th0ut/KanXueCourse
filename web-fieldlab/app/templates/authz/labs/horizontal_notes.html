@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>课后便签修改器</h2>
+    {% if message %}<div class="result-banner success">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="stack-list">
+      {% for row in notes %}
+      <form method="post" action="?mode={{ mode }}" class="feed-card form-grid">
+        <input type="hidden" name="note_id" value="{{ row.note_id }}">
+        <div class="feed-meta"><strong>note #{{ row.note_id }}</strong><span class="muted mono">owner={{ row.owner_user_id }} / {{ row.updated_at }}</span></div>
+        <textarea name="body" rows="4">{{ row.body }}</textarea>
+        <button class="button-primary" type="submit">提交修改</button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

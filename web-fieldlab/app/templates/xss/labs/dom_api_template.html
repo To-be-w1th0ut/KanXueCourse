@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card" id="api-template-lab" data-mode="{{ mode }}">
+    <h2>JSON 搜索面板</h2>
+    <form id="api-template-form" class="form-grid inline-form">
+      <label>query<input type="text" name="q" placeholder="例如：dom"></label>
+      <button class="button-primary" type="submit">搜索并渲染</button>
+    </form>
+    <div class="preview-stage"><div id="api-search-header" class="preview-banner muted">结果标题区</div></div>
+    <div id="api-search-results" class="stack-list"></div>
+  </section>
+</div>
+<script>
+window.FieldLabApiSearch = { endpoint: "/api/cards/search", mode: "{{ mode }}" };
+</script>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

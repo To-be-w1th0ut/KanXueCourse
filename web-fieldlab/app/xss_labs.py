@@ -1,0 +1,332 @@
+from __future__ import annotations
+
+from collections import defaultdict
+
+ROUTE_ORDER = [
+    "服务端反射型 XSS",
+    "服务端存储型 XSS",
+    "DOM 型 XSS",
+    "混合 / 二次 XSS",
+]
+
+CONTEXT_ORDER = [
+    "HTML 文本上下文",
+    "HTML 属性上下文",
+    "JavaScript 字符串上下文",
+    "Markdown / 富文本上下文",
+    "SVG / XML 上下文",
+    "URL 协议上下文",
+    "API 模板上下文",
+    "postMessage / srcdoc 上下文",
+]
+
+TIMING_ORDER = [
+    "立即触发",
+    "存储后触发",
+    "导航后触发",
+    "消息触发",
+]
+
+SINK_ORDER = [
+    "原始模板渲染",
+    "innerHTML",
+    "inline script",
+    "iframe srcdoc",
+    "href / javascript:",
+    "Markdown 渲染器",
+    "内联 SVG",
+    "黑名单伪修复",
+]
+
+LABS = [
+    {
+        "slug": "reflected-html",
+        "title": "L01 反射型 HTML 文本上下文",
+        "subtitle": "最基础的一关：把查询参数直接当成 HTML 文本片段回显。",
+        "difficulty": "基础",
+        "story": "课件公告页允许老师把临时提示拼进页面横幅。",
+        "endpoint": "/labs/xss/reflected-html",
+        "surfaces": ["query string", "announcement banner"],
+        "route_class": "服务端反射型 XSS",
+        "context_class": "HTML 文本上下文",
+        "timing_class": "立即触发",
+        "sink_class": "原始模板渲染",
+        "defense_focus": "输出编码 / autoescape",
+        "teacher_path": "先讲浏览器把不可信字符串当 HTML 解析，再对比 autoescape 的作用。",
+        "hints": [
+            "观察用户输入最终落在页面的哪个区域：文本节点还是属性/脚本。",
+            "如果服务端把输入直接标成“安全 HTML”，浏览器就会按标签解释。",
+            "课堂验证建议优先调用 fieldlab.record('reflected-html','...')，比 alert 更稳定。",
+        ],
+        "reset": "无需重置；该关卡默认只读。",
+    },
+    {
+        "slug": "reflected-attribute",
+        "title": "L02 反射型属性上下文",
+        "subtitle": "不是所有 XSS 都发生在标签之间，属性位同样危险。",
+        "difficulty": "进阶",
+        "story": "名牌预览组件会把昵称直接塞进 title/data-* 属性。",
+        "endpoint": "/labs/xss/reflected-attribute",
+        "surfaces": ["badge builder", "title attribute"],
+        "route_class": "服务端反射型 XSS",
+        "context_class": "HTML 属性上下文",
+        "timing_class": "立即触发",
+        "sink_class": "原始模板渲染",
+        "defense_focus": "属性编码 / 模板分离",
+        "teacher_path": "强调“同样是 HTML”，属性边界的闭合方式和文本节点不一样。",
+        "hints": [
+            "先确认输入是不是落在双引号包裹的属性里。",
+            "如果能跳出原属性，就可能追加新的事件属性或破坏标签结构。",
+            "修复时不要拼整段 HTML，再整体标 safe。",
+        ],
+        "reset": "无需重置；该关卡默认只读。",
+    },
+    {
+        "slug": "js-string",
+        "title": "L03 JavaScript 字符串上下文",
+        "subtitle": "服务端输出不是 HTML，也可能是内联脚本里的字符串字面量。",
+        "difficulty": "进阶",
+        "story": "迎新横幅把欢迎词注入到内联脚本里，再写回页面。",
+        "endpoint": "/labs/xss/js-string",
+        "surfaces": ["inline script", "welcome banner"],
+        "route_class": "服务端反射型 XSS",
+        "context_class": "JavaScript 字符串上下文",
+        "timing_class": "立即触发",
+        "sink_class": "inline script",
+        "defense_focus": "tojson / JS 上下文编码",
+        "teacher_path": "这关适合讲“HTML 转义”不能替代“JavaScript 上下文编码”。",
+        "hints": [
+            "看看输入最终是不是被包在引号里进入 JS 变量。",
+            "如果字符串边界被打破，后面的内容就不再是普通文本。",
+            "安全对照重点看服务端是不是使用 tojson 之类的 JS 安全序列化。",
+        ],
+        "reset": "无需重置；该关卡默认只读。",
+    },
+    {
+        "slug": "stored-comments",
+        "title": "L04 存储型评论墙",
+        "subtitle": "经典持久化 XSS：第一次输入，后续访问者都中招。",
+        "difficulty": "基础",
+        "story": "学员留言墙支持富文本，但老版本直接信任用户提交的 HTML。",
+        "endpoint": "/labs/xss/stored-comments",
+        "surfaces": ["comments table", "wall renderer"],
+        "route_class": "服务端存储型 XSS",
+        "context_class": "HTML 文本上下文",
+        "timing_class": "存储后触发",
+        "sink_class": "原始模板渲染",
+        "defense_focus": "Sanitizer / allowlist",
+        "teacher_path": "让学生区分 reflected 与 stored：一个请求里触发，还是持久化传播。",
+        "hints": [
+            "先提交一条正常评论，确认内容会被持久化展示。",
+            "如果评论内容被直接当 HTML 渲染，就不只影响提交者自己。",
+            "安全模式可观察 bleach 清洗后还允许哪些标签。",
+        ],
+        "reset": "使用 ./scripts/reset_lab.sh stored-comments 恢复留言墙。",
+    },
+    {
+        "slug": "second-order-signature",
+        "title": "L05 二次 XSS：签名档审核",
+        "subtitle": "第一次保存不触发，真正执行发生在管理员后续查看摘要时。",
+        "difficulty": "高级",
+        "story": "讲师签名档会被同步进后台审核卡片，开发误以为“数据库里的数据一定安全”。",
+        "endpoint": "/labs/xss/second-order-signature",
+        "surfaces": ["profile signature", "admin digest"],
+        "route_class": "混合 / 二次 XSS",
+        "context_class": "HTML 文本上下文",
+        "timing_class": "存储后触发",
+        "sink_class": "原始模板渲染",
+        "defense_focus": "二次输出也要 sanitize",
+        "teacher_path": "用生命周期讲清楚：存储不是终点，真正危险在后续渲染链路。",
+        "hints": [
+            "先找“保存签名”的地方，再找“管理员视角渲染”的地方。",
+            "第一次写入不一定有任何异常，真正的执行可能发生在另一位用户访问时。",
+            "修复时不要只校验提交入口，读取再输出时也要重新处理。",
+        ],
+        "reset": "使用 ./scripts/reset_lab.sh second-order-signature 恢复默认签名。",
+    },
+    {
+        "slug": "dom-hash",
+        "title": "L06 DOM 型：location.hash → innerHTML",
+        "subtitle": "服务端没拼 HTML，浏览器端脚本自己把 hash 写进了 DOM。",
+        "difficulty": "基础",
+        "story": "单页课件通过 hash 显示提示卡片，开发者为了方便直接用了 innerHTML。",
+        "endpoint": "/labs/xss/dom-hash",
+        "surfaces": ["location.hash", "innerHTML preview"],
+        "route_class": "DOM 型 XSS",
+        "context_class": "HTML 文本上下文",
+        "timing_class": "导航后触发",
+        "sink_class": "innerHTML",
+        "defense_focus": "textContent / createTextNode",
+        "teacher_path": "这关强调“漏洞可以完全发生在浏览器端”，服务端日志甚至看不见 payload。",
+        "hints": [
+            "观察页面是不是读取了 hash、search 或 localStorage 之类的浏览器端数据。",
+            "如果数据直接喂给 innerHTML，服务端是否参与已经不重要了。",
+            "安全对照要看 sink 是否从 innerHTML 改成 textContent。",
+        ],
+        "reset": "无需重置；该关卡默认只读。",
+    },
+    {
+        "slug": "dom-api-template",
+        "title": "L07 DOM 型：JSON 模板渲染",
+        "subtitle": "接口返回 JSON，前端照样可能把它拼成危险的 HTML。",
+        "difficulty": "进阶",
+        "story": "搜索面板从 JSON API 取回卡片后，用模板字符串一次性写入结果区。",
+        "endpoint": "/labs/xss/dom-api-template",
+        "surfaces": ["fetch JSON", "result list"],
+        "route_class": "DOM 型 XSS",
+        "context_class": "API 模板上下文",
+        "timing_class": "立即触发",
+        "sink_class": "innerHTML",
+        "defense_focus": "createElement / textContent",
+        "teacher_path": "用它把“接口安全”和“前端渲染安全”拆开讲。",
+        "hints": [
+            "先看接口返回的是不是纯 JSON，再看前端如何消费这些字段。",
+            "只要最后落到 innerHTML，前端模板字符串也能触发 XSS。",
+            "课堂演示可以同时比较 query 参数反射和接口字段反射。",
+        ],
+        "reset": "无需重置；该关卡默认只读。",
+    },
+    {
+        "slug": "postmessage-srcdoc",
+        "title": "L08 postMessage / srcdoc Sink",
+        "subtitle": "跨窗口消息如果不校验结构和来源，也能把攻击数据送进 iframe。",
+        "difficulty": "高级",
+        "story": "讲师把卡片 HTML 发给预览 iframe，接收页直接塞进 srcdoc。",
+        "endpoint": "/labs/xss/postmessage-srcdoc",
+        "surfaces": ["postMessage", "iframe srcdoc"],
+        "route_class": "DOM 型 XSS",
+        "context_class": "postMessage / srcdoc 上下文",
+        "timing_class": "消息触发",
+        "sink_class": "iframe srcdoc",
+        "defense_focus": "origin 校验 / schema 校验 / textContent",
+        "teacher_path": "这关适合讲浏览器端信任边界，而不是只盯着表单输入。",
+        "hints": [
+            "关注消息是怎么跨窗口传递的，以及接收方把它放到了哪里。",
+            "iframe 的 srcdoc 本质就是一段新的 HTML 文档。",
+            "安全模式除了校验 origin，还要限制消息结构和最终 sink。",
+        ],
+        "reset": "无需重置；该关卡默认只读。",
+    },
+    {
+        "slug": "markdown-preview",
+        "title": "L09 Markdown / 富文本预览",
+        "subtitle": "“支持 Markdown”并不等于“自动安全”。",
+        "difficulty": "进阶",
+        "story": "讲义草稿系统允许老师保存 Markdown，再在课程页渲染成富文本。",
+        "endpoint": "/labs/xss/markdown-preview",
+        "surfaces": ["markdown storage", "render preview"],
+        "route_class": "服务端存储型 XSS",
+        "context_class": "Markdown / 富文本上下文",
+        "timing_class": "存储后触发",
+        "sink_class": "Markdown 渲染器",
+        "defense_focus": "render 后 sanitize",
+        "teacher_path": "重点讲“渲染器”和“清洗器”是两件不同的事。",
+        "hints": [
+            "先确认 Markdown 渲染器对原始 HTML 的默认策略。",
+            "很多项目以为“只收 Markdown”就天然安全，但渲染结果仍是 HTML。",
+            "安全对照应该在 Markdown 渲染之后再做 allowlist 清洗。",
+        ],
+        "reset": "使用 ./scripts/reset_lab.sh markdown-preview 恢复默认讲义。",
+    },
+    {
+        "slug": "svg-preview",
+        "title": "L10 SVG 预览与内联渲染",
+        "subtitle": "把用户 SVG 直接内联进 DOM，本质上就是把一段新文档交给浏览器。",
+        "difficulty": "高级",
+        "story": "徽章设计器为了实时预览，会把 SVG 代码原样嵌回页面。",
+        "endpoint": "/labs/xss/svg-preview",
+        "surfaces": ["svg gallery", "inline preview"],
+        "route_class": "服务端存储型 XSS",
+        "context_class": "SVG / XML 上下文",
+        "timing_class": "存储后触发",
+        "sink_class": "内联 SVG",
+        "defense_focus": "禁止内联不可信 SVG / 仅展示源码",
+        "teacher_path": "适合扩展讲浏览器解析器不仅解析 HTML，还会解析 SVG / XML。",
+        "hints": [
+            "看预览区是不是把 SVG 当成真正的 DOM 节点插了进去。",
+            "SVG 不是“图片字符串”，内联后会进入浏览器解析链。",
+            "安全模式的关键不是“继续渲染但希望没事”，而是改变展示方式。",
+        ],
+        "reset": "使用 ./scripts/reset_lab.sh svg-preview 恢复默认徽章。",
+    },
+    {
+        "slug": "url-bookmarks",
+        "title": "L11 javascript: 协议与链接注入",
+        "subtitle": "XSS 不一定靠 script 标签，危险协议也会成为执行入口。",
+        "difficulty": "基础",
+        "story": "课堂书签板把学员提交的链接直接挂到 href 上。",
+        "endpoint": "/labs/xss/url-bookmarks",
+        "surfaces": ["bookmark list", "href attribute"],
+        "route_class": "服务端存储型 XSS",
+        "context_class": "URL 协议上下文",
+        "timing_class": "存储后触发",
+        "sink_class": "href / javascript:",
+        "defense_focus": "协议白名单",
+        "teacher_path": "这关能很好提醒学生：链接属性也是可执行入口，不只是 innerHTML。",
+        "hints": [
+            "先看链接值有没有经过协议级别校验，而不是只看有没有尖括号。",
+            "如果 href 允许危险协议，点击动作本身就可能成为触发器。",
+            "安全模式应只允许 http/https/mailto 等明确协议。",
+        ],
+        "reset": "使用 ./scripts/reset_lab.sh url-bookmarks 恢复默认书签。",
+    },
+    {
+        "slug": "faux-fix",
+        "title": "L12 伪修复：只删 <script>",
+        "subtitle": "把 script 关键字删掉，不代表浏览器就不会执行别的上下文。",
+        "difficulty": "基础",
+        "story": "开发以为只要替换掉 <script> 标签，就能宣布“已经修复 XSS”。",
+        "endpoint": "/labs/xss/faux-fix",
+        "surfaces": ["status widget", "blacklist filter"],
+        "route_class": "服务端反射型 XSS",
+        "context_class": "HTML 文本上下文",
+        "timing_class": "立即触发",
+        "sink_class": "黑名单伪修复",
+        "defense_focus": "正确输出编码 / 合理 sanitize，而非关键字替换",
+        "teacher_path": "把它放在课程后半段，用来回收“黑名单为什么不可靠”。",
+        "hints": [
+            "先看过滤器到底删了什么，又没删什么。",
+            "浏览器可执行的路径不只一种，不要把 XSS 等价成 script 标签。",
+            "重点不是寻找最花哨绕过，而是理解过滤思路的根本问题。",
+        ],
+        "reset": "无需重置；该关卡默认只读。",
+    },
+]
+
+
+for lab in LABS:
+    lab.setdefault("domain", "xss")
+    lab.setdefault("primary_class", lab.get("context_class", "HTML 文本上下文"))
+    lab.setdefault("secondary_class", lab.get("sink_class", lab.get("route_class", "原始模板渲染")))
+
+LAB_INDEX = {item["slug"]: item for item in LABS}
+
+
+def get_lab(slug: str):
+    return LAB_INDEX[slug]
+
+
+def _group_by(items: list[dict], key: str, order: list[str]):
+    grouped = defaultdict(list)
+    for item in items:
+        grouped[item[key]].append(item)
+    result = []
+    for name in order:
+        if grouped[name]:
+            result.append({"name": name, "labs": grouped[name]})
+    return result
+
+
+def build_taxonomy() -> dict:
+    return {
+        "route_groups": _group_by(LABS, "route_class", ROUTE_ORDER),
+        "context_groups": _group_by(LABS, "context_class", CONTEXT_ORDER),
+        "sink_groups": _group_by(LABS, "sink_class", SINK_ORDER),
+        "timing_groups": _group_by(LABS, "timing_class", TIMING_ORDER),
+        "counts": {
+            "routes": len({lab["route_class"] for lab in LABS}),
+            "contexts": len({lab["context_class"] for lab in LABS}),
+            "sinks": len({lab["sink_class"] for lab in LABS}),
+            "timings": len({lab["timing_class"] for lab in LABS}),
+        },
+    }

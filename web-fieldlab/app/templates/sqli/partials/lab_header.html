@@ -1,0 +1,16 @@
+<section class="lab-header">
+  <div class="lab-head-main">
+    <div class="eyebrow amber">{{ lab.position_class }} / {{ lab.observation_class }} / {{ lab.difficulty }}</div>
+    <h1>{{ lab.title }}</h1>
+    <p class="lead mini">{{ lab.subtitle }}</p>
+    <p class="muted">场景：{{ lab.story }}</p>
+  </div>
+  <aside class="lab-meta-card">
+    <div><span class="label">当前模式</span><strong>{{ '漏洞模式' if mode == 'vuln' else '安全模式' }}</strong></div>
+    <div><span class="label">主轴分类</span><span>{{ lab.position_class }} · {{ lab.position_detail }}</span></div>
+    <div><span class="label">生效时机</span><span>{{ lab.timing_class }}</span></div>
+    <div><span class="label">最终影响</span><span>{{ lab.impact_class }}</span></div>
+    <div><span class="label">数据库侧重</span><span>{{ lab.database_profiles|join(' / ') }}</span></div>
+    <div><span class="label">重置</span><span>{{ lab.reset }}</span></div>
+  </aside>
+</section>

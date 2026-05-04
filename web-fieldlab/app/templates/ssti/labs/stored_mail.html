@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card split-card">
+    <div>
+      <h2>保存邮件模板</h2>
+      <form method="post" action="?mode={{ mode }}" class="form-grid">
+        <input type="hidden" name="action" value="save">
+        <label>title<input type="text" name="title" placeholder="例如：week-summary"></label>
+        <label>body<textarea name="body" rows="7" placeholder="例如：Hello {{ '{{ student_name }}' }}">{% if templates %}{{ templates[0].body }}{% endif %}</textarea></label>
+        <button class="button-primary" type="submit">保存模板</button>
+      </form>
+      <div class="stack-list">
+        {% for item in templates %}
+        <article class="feed-card"><div class="feed-meta"><strong>{{ item.title }}</strong><span class="muted mono">{{ item.created_at }}</span></div><pre class="code-panel">{{ item.body }}</pre></article>
+        {% endfor %}
+      </div>
+    </div>
+    <div>
+      <h2>预览最新模板</h2>
+      <form method="post" action="?mode={{ mode }}">
+        <input type="hidden" name="action" value="preview">
+        <button class="button-secondary" type="submit">渲染最新模板</button>
+      </form>
+      <pre class="code-panel">context = {{ context }}</pre>
+      {% if preview is not none %}<div class="preview-stage"><div class="preview-banner">{{ preview }}</div></div>{% endif %}
+      {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

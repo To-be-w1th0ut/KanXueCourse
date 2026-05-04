@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>SQLAlchemy 查询台</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>category<input type="text" name="category" value="{{ category }}" placeholder="例如：Hardware"></label>
+      <button class="button-primary" type="submit">查询</button>
+    </form>
+    <div class="table-card slim">
+      <table class="lab-table">
+        <thead><tr><th>ID</th><th>SKU</th><th>名称</th><th>分类</th><th>价格</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+          <tr><td>{{ row.product_id }}</td><td>{{ row.sku }}</td><td>{{ row.name }}</td><td>{{ row.category }}</td><td>{{ row.price }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>教学观察点</h2>
+    <ul class="hint-list compact-list">
+      <li>“项目用了 ORM”并不自动等于“项目没有 SQL 注入”。</li>
+      <li>如果开发者把用户输入先拼进字符串，再交给 ORM 执行，风险依然存在。</li>
+      <li>这是很适合讲代码审计思路的一关。</li>
+    </ul>
+  </aside>
+</div>
+{% include 'partials/hints.html' %}
+{% endblock %}

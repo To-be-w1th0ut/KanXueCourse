@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}{{ domain.title }} - Unified FieldLab{% endblock %}
+{% block content %}
+<section class="section-heading compact">
+  <div>
+    <div class="eyebrow">{{ domain.code }}</div>
+    <h1>{{ domain.title }}</h1>
+    <p class="lead mini">{{ domain.description }}</p>
+  </div>
+</section>
+
+<section class="detail-grid taxonomy-grid-single">
+  <article class="info-card">
+    <h2>{{ taxonomy_label }}</h2>
+    <ul class="hint-list compact-list">
+      {% for group in taxonomy_groups %}
+      <li><strong>{{ group.name }}</strong>：{{ group.labs|map(attribute='title')|join('、') }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+  <article class="info-card">
+    <h2>教学建议</h2>
+    <ul class="hint-list compact-list">
+      {% for point in domain.teaching_points %}
+      <li>{{ point }}</li>
+      {% endfor %}
+    </ul>
+  </article>
+</section>
+
+<div class="table-card">
+  <table class="lab-table taxonomy-table">
+    <thead>
+      <tr>
+        <th>关卡</th>
+        <th>{{ primary_label }}</th>
+        <th>{{ secondary_label }}</th>
+        <th>时机 / 难度</th>
+        <th>防御重点</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for lab in labs %}
+      <tr>
+        <td><strong>{{ lab.title }}</strong><div class="muted small">{{ lab.subtitle }}</div></td>
+        <td>{{ lab.primary_class }}</td>
+        <td>{{ lab.secondary_class }}</td>
+        <td>{{ lab.timing_class }} / {{ lab.difficulty }}</td>
+        <td>{{ lab.defense_focus }}</td>
+        <td><a class="text-link" href="{{ lab.endpoint }}?mode=vuln">进入 →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

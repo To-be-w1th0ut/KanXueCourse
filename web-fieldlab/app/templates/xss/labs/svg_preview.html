@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>徽章 SVG 预览</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>title<input type="text" name="title" placeholder="例如：red-team-badge"></label>
+      <label>svg_markup<textarea name="svg_markup" rows="8" placeholder="粘贴 SVG 代码"></textarea></label>
+      <button class="button-primary" type="submit">保存到画廊</button>
+    </form>
+    <div class="gallery-grid">
+      {% for item in snippets %}
+      <article class="feed-card">
+        <div class="feed-meta"><strong>{{ item.title }}</strong><span class="muted mono">{{ item.created_at }}</span></div>
+        {% if mode == 'vuln' %}
+          <div class="svg-surface">{{ item.rendered }}</div>
+        {% else %}
+          <pre class="code-panel">{{ item.rendered }}</pre>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

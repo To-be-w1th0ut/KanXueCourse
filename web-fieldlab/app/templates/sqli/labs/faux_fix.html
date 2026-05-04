@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>“已经做了过滤”的登录页</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>用户名<input type="text" name="username" placeholder="例如：admin"></label>
+      <label>密码<input type="text" name="password" placeholder="例如：winter2026"></label>
+      <button class="button-primary" type="submit">提交认证</button>
+    </form>
+    {% if result %}
+      <div class="result-banner {{ 'success' if matched_user else 'danger' }}">{{ result }}</div>
+    {% endif %}
+    {% if matched_user %}
+      <div class="data-card">
+        <div><span>display_name</span><strong>{{ matched_user.display_name }}</strong></div>
+        <div><span>username</span><strong>{{ matched_user.username }}</strong></div>
+        <div><span>role</span><strong>{{ matched_user.role }}</strong></div>
+      </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>教学观察点</h2>
+    <ul class="hint-list compact-list">
+      <li>黑名单常常只挡住老师课件里的那几个 payload，却挡不住变体。</li>
+      <li>这关重点不是绕过技巧本身，而是让学生建立“过滤 ≠ 参数化”的概念。</li>
+      <li>可顺带讲解大小写、注释、逻辑等价和函数替代思路。</li>
+    </ul>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

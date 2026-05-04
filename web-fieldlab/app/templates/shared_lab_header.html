@@ -1,0 +1,16 @@
+<section class="lab-header">
+  <div class="lab-head-main">
+    <div class="eyebrow amber">{{ lab.primary_class }} / {{ lab.secondary_class }} / {{ lab.difficulty }}</div>
+    <h1>{{ lab.title }}</h1>
+    <p class="lead mini">{{ lab.subtitle }}</p>
+    <p class="muted">场景：{{ lab.story }}</p>
+  </div>
+  <aside class="lab-meta-card">
+    <div><span class="label">当前模式</span><strong>{{ '漏洞模式' if mode == 'vuln' else '安全模式' }}</strong></div>
+    <div><span class="label">主轴</span><span>{{ lab.primary_class }}</span></div>
+    <div><span class="label">次轴</span><span>{{ lab.secondary_class }}</span></div>
+    <div><span class="label">触发时机</span><span>{{ lab.timing_class }}</span></div>
+    <div><span class="label">防御重点</span><span>{{ lab.defense_focus }}</span></div>
+    <div><span class="label">重置</span><span>{{ lab.reset }}</span></div>
+  </aside>
+</section>

@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}Unified FieldLab 总览{% endblock %}
+{% block content %}
+<section class="section-heading compact">
+  <div>
+    <div class="eyebrow">LAB INDEX</div>
+    <h1>统一环境总览</h1>
+    <p class="lead mini">一个站点里并列五条教学轨道；建议先按单一漏洞域讲清，再做跨域对照。</p>
+  </div>
+</section>
+
+<div class="table-card">
+  <table class="lab-table taxonomy-table">
+    <thead>
+      <tr>
+        <th>漏洞域</th>
+        <th>说明</th>
+        <th>关卡数</th>
+        <th>入口</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for domain in domains %}
+      <tr>
+        <td><strong>{{ domain.title }}</strong></td>
+        <td>{{ domain.description }}</td>
+        <td>{{ domain.count }}</td>
+        <td><a class="text-link" href="{{ domain.href }}">进入 →</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+services:
+  db:
+    image: docker.m.daocloud.io/library/mariadb:10.11
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-labroot}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sql_training}
+      MYSQL_USER: ${MYSQL_USER:-labapp}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-labpass}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "127.0.0.1:3308:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./db/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
+      - ./db/01_seed.sql:/docker-entrypoint-initdb.d/01_seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-labroot}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  intranet:
+    build:
+      context: ./internal-service
+    restart: unless-stopped
+    expose:
+      - "7001"
+    networks:
+      default:
+        aliases:
+          - preview-gateway
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7001/public/status', timeout=3)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build:
+      context: ./app
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST:-db}
+      DB_PORT: ${DB_PORT:-3306}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-sql_training}
+      MYSQL_USER: ${MYSQL_USER:-labapp}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-labpass}
+      APP_HOST: ${APP_HOST:-0.0.0.0}
+      APP_PORT: ${APP_PORT:-5000}
+      APP_PUBLIC_PORT: ${APP_PUBLIC_PORT:-5070}
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-change-me-for-classroom}
+      CONTENT_DB_PATH: ${CONTENT_DB_PATH:-/app/data/content.db}
+      SSRF_INTERNAL_BASE: http://intranet:7001
+    depends_on:
+      db:
+        condition: service_healthy
+      intranet:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${HOST_WEB_PORT:-5070}:5000"
+    volumes:
+      - ./app/data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  mariadb_data:

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>欢迎词脚本注入</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>note<input type="text" name="note" value="{{ note }}" placeholder="例如：欢迎来到演示厅"></label>
+      <button class="button-primary" type="submit">执行脚本</button>
+    </form>
+    <div class="preview-stage"><div id="js-output" class="preview-banner muted">脚本结果会显示在这里</div></div>
+    {% if code_preview %}<pre class="code-panel">{{ code_preview }}</pre>{% endif %}
+    {% if note and mode == 'safe' %}
+    <script>
+      const banner = {{ note|tojson }};
+      document.getElementById('js-output').textContent = banner;
+    </script>
+    {% elif script_block %}
+      {{ script_block }}
+    {% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>观察点</h2>
+    <p>安全模式一共做了两件事：一是对 JS 字符串做安全序列化，二是把 DOM sink 从 innerHTML 改成 textContent。</p>
+  </aside>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Unified FieldLab{% endblock %}
+{% block content %}
+<section class="hero-panel xss-hero">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow amber">统一教学环境</div>
+      <h1>一套 Web 环境，覆盖 <span>五类高频 Web 漏洞靶场</span></h1>
+      <p class="lead">
+        把 SQL 注入、XSS、SSTI、SSRF、水平/垂直越权统一到一套课堂环境里：同一导航、同一风格、同一运行方式，但每个漏洞域保留自己的分类学与修复对照。
+      </p>
+      <div class="cta-row">
+        <a class="button-primary" href="/labs">进入总览</a>
+        <a class="button-secondary" href="/domains/sqli">从 SQLi 轨道开始</a>
+      </div>
+    </div>
+    <aside class="signal-card signal-card-xss">
+      <div class="signal-title">课程覆盖面</div>
+      <ul class="metric-list">
+        <li><span>{{ total_labs }}</span> 个关卡</li>
+        <li><span>{{ domains|length }}</span> 个漏洞域</li>
+        <li><span>1</span> 个统一 Web 入口</li>
+        <li><span>2</span> 种模式（漏洞 / 安全）</li>
+      </ul>
+      <div class="terminal-slab">
+        <code>统一入口：http://127.0.0.1:{{ app_public_port }}</code>
+        <code>MariaDB + SQLite + 内部 SSRF 服务</code>
+        <code>支持局部 / 全量 reset</code>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<section class="lab-wall">
+  <div class="section-heading">
+    <div>
+      <div class="eyebrow">DOMAINS</div>
+      <h2>按漏洞域划分的统一教学轨道</h2>
+    </div>
+  </div>
+  <div class="lab-card-grid">
+    {% for domain in domains %}
+    <a class="lab-card xss-card" href="{{ domain.href }}">
+      <div class="lab-card-top">
+        <span class="badge badge-{{ domain.level }}">{{ domain.level }}</span>
+        <span class="muted mono">{{ domain.count }} labs</span>
+      </div>
+      <h3>{{ domain.title }}</h3>
+      <p>{{ domain.description }}</p>
+      <div class="lab-card-foot"><span>{{ domain.summary }}</span></div>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

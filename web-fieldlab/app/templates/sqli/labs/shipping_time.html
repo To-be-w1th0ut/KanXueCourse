@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>物流状态查看</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>order number<input type="text" name="order" value="{{ order_number }}" placeholder="例如：SO-2026-0416"></label>
+      <button class="button-primary" type="submit">查询</button>
+    </form>
+    {% if elapsed is not none %}
+      <div class="data-card wide">
+        <div><span>status</span><strong>{{ status }}</strong></div>
+        <div><span>elapsed_seconds</span><strong>{{ elapsed }}</strong></div>
+      </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>教学观察点</h2>
+    <ul class="hint-list compact-list">
+      <li>这关最适合讲“没有报错、没有数据回显，并不代表无风险”。</li>
+      <li>先做基线请求，避免把网络抖动误判成时间盲注信号。</li>
+      <li>在安全模式里，sleep 不会再进入 SQL 解释链。</li>
+    </ul>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

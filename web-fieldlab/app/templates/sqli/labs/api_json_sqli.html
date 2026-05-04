@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>JSON API 演示面板</h2>
+    <form id="api-form" class="form-grid three-col">
+      <label>customer<input type="text" name="customer" value="Acme" placeholder="例如：Acme"></label>
+      <label>min_total<input type="text" name="min_total" value="100" placeholder="例如：100"></label>
+      <div class="inline-button-row end">
+        <button class="button-primary" type="submit">发送 JSON 请求</button>
+      </div>
+    </form>
+    <div class="terminal-slab with-copy">
+      <code id="api-curl">curl -s http://127.0.0.1:{{ app_public_port }}/api/v1/orders/search?mode={{ mode }} -H 'Content-Type: application/json' -d '{"customer":"Acme","min_total":"100"}'</code>
+      <button class="copy-btn" data-copy-target="api-curl">复制 curl</button>
+    </div>
+    <pre id="api-response" class="code-panel">等待请求...</pre>
+  </section>
+  <aside class="info-card">
+    <h2>教学观察点</h2>
+    <ul class="hint-list compact-list">
+      <li>接口层的输入从 form-urlencoded 变成 JSON，不改变 SQL 拼接本质。</li>
+      <li>推荐老师同时展示浏览器 fetch 和 curl，帮助学生把 API 注入与页面注入统一起来。</li>
+      <li>若要讲自动化测试，可基于这个接口再扩展最小 PoC 脚本。</li>
+    </ul>
+  </aside>
+</div>
+<script>
+window.FieldLabApi = { endpoint: "/api/v1/orders/search?mode={{ mode }}" };
+</script>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

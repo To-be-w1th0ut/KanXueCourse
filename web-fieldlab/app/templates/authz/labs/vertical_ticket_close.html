@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>工单关闭台</h2>
+    {% if message %}<div class="result-banner success">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="stack-list">
+      {% for row in tickets %}
+      <form method="post" action="?mode={{ mode }}" class="feed-card form-grid">
+        <input type="hidden" name="ticket_id" value="{{ row.ticket_id }}">
+        <div class="feed-meta"><strong>#{{ row.ticket_id }} {{ row.subject }}</strong><span class="muted mono">owner={{ row.owner_user_id }} / status={{ row.status }}</span></div>
+        <pre class="code-panel">{{ row.internal_note }}</pre>
+        <button class="button-primary" type="submit">关闭工单</button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

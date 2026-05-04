@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>主题片段编辑器</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>fragment<textarea name="fragment" rows="6" placeholder="例如：<strong>{{ '{{ title }}' }}</strong>">{{ fragment }}</textarea></label>
+      <button class="button-primary" type="submit">拼进系统模板</button>
+    </form>
+    {% if source %}<pre class="code-panel">assembled source = {{ source }}</pre>{% endif %}
+    {% if rendered is not none %}<div class="preview-stage">{{ rendered }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="stack-list">
+      {% for item in themes %}
+      <article class="feed-card"><div class="feed-meta"><strong>{{ item.name }}</strong><span class="muted mono">{{ item.created_at }}</span></div><pre class="code-panel">{{ item.body }}</pre></article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

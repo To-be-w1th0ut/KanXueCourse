@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>订单清单</h2>
+    <div class="stack-list">
+      {% for row in orders %}
+      <article class="feed-card row-card">
+        <div><strong>#{{ row.order_id }}</strong><div class="muted small">owner={{ row.owner_user_id }} / {{ row.item_name }} / ¥{{ row.total_amount }}</div></div>
+        <a class="button-secondary" href="{{ request.path }}?order_id={{ row.order_id }}&mode={{ mode }}">查看详情</a>
+      </article>
+      {% endfor %}
+    </div>
+    {% if selected_order %}
+    <div class="preview-stage">
+      <strong>订单 #{{ selected_order.order_id }}</strong>
+      <p>item={{ selected_order.item_name }} / owner={{ selected_order.owner_user_id }}</p>
+      <pre class="code-panel">{{ selected_order.secret_note }}</pre>
+    </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

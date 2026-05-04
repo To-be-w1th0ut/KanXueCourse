@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}FieldLab XSS Range{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>window.fieldlab = window.fieldlab || { _queue: [], record: function(lab, message, source) { this._queue.push({ lab: lab || 'unknown', message: message || 'executed', source: source || 'browser' }); } };</script>
+    <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </head>
+  <body>
+    <div class="noise"></div>
+    <header class="topbar">
+      <div class="brand-wrap">
+        <a href="/" class="brand-mark">CROSSSITE</a>
+        <div class="brand-copy">
+          <div class="eyebrow magenta">FieldLab XSS Range</div>
+          <div class="muted">按解析链、上下文与 sink 组织的前端漏洞教学靶场</div>
+        </div>
+      </div>
+      <nav class="top-actions">
+        <a href="/labs" class="nav-pill">关卡总览</a>
+        <a href="/healthz" class="nav-pill">健康检查</a>
+        <a href="{{ request.path }}?mode=vuln" class="nav-pill {% if mode == 'vuln' %}active{% endif %}">漏洞模式</a>
+        <a href="{{ request.path }}?mode=safe" class="nav-pill {% if mode == 'safe' %}active{% endif %}">安全模式</a>
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      {% block content %}{% endblock %}
+    </main>
+
+    <aside class="event-dock">
+      <div class="event-card">
+        <div class="event-head">
+          <div>
+            <div class="eyebrow">Execution Console</div>
+            <strong>脚本执行回显面板</strong>
+          </div>
+          <button class="copy-btn tiny-btn" type="button" data-clear-events>清空</button>
+        </div>
+        <p class="muted small">课堂里建议让 payload 调用 <code>fieldlab.record('lab-slug','message')</code>，比单纯弹窗更稳定。</p>
+        <ul id="event-list" class="event-list">
+          <li class="muted">等待浏览器侧事件...</li>
+        </ul>
+      </div>
+    </aside>
+  </body>
+</html>

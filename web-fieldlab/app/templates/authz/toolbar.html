@@ -1,0 +1,13 @@
+<section class="info-card">
+  <h2>身份切换台</h2>
+  <div class="inline-button-row wrap-row">
+    {% for user in auth_users %}
+      <a class="nav-pill {% if current_auth_user and current_auth_user.user_id == user.user_id %}active{% endif %}" href="/labs/authz/switch/{{ user.user_id }}?next={{ request.path }}&mode={{ mode }}">{{ user.display_name }}（{{ user.role }}）</a>
+    {% endfor %}
+  </div>
+  {% if current_auth_user %}
+    <p class="muted">当前身份：<strong>{{ current_auth_user.display_name }}</strong> / {{ current_auth_user.role }}</p>
+  {% else %}
+    <p class="muted">尚未选择身份，默认会自动切到 Alice Student。</p>
+  {% endif %}
+</section>

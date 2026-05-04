@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>门禁存在性检查</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>badge code<input type="text" name="badge" value="{{ badge }}" placeholder="例如：BDG-1142"></label>
+      <button class="button-primary" type="submit">验证</button>
+    </form>
+    {% if exists is not none %}
+      <div class="result-banner {{ 'success' if exists else 'danger' }}">{{ '门禁记录存在' if exists else '门禁记录不存在' }}</div>
+    {% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>教学观察点</h2>
+    <ul class="hint-list compact-list">
+      <li>盲注场景里，真假回显已经足够承载逐位枚举。</li>
+      <li>建议学生先用永真 / 永假条件验证信道是否存在。</li>
+      <li>对比时间盲注，可讲“页面行为本身就是数据通道”。</li>
+    </ul>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

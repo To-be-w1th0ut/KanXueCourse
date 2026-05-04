@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>名牌预览器</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>nickname<input type="text" name="nickname" value="{{ nickname }}" placeholder="例如：BlueFox"></label>
+      <button class="button-primary" type="submit">生成名牌</button>
+    </form>
+    <div class="preview-stage">
+      {% if nickname %}
+        {% if mode == 'vuln' %}
+          {{ badge_markup }}
+        {% else %}
+          <button class="demo-badge" title="{{ nickname }}" data-owner="{{ nickname }}">Hover preview badge</button>
+        {% endif %}
+      {% else %}
+        <span class="muted">名牌会渲染在这里，请尝试 hover 或点击。</span>
+      {% endif %}
+    </div>
+  </section>
+  <aside class="info-card">
+    <h2>观察点</h2>
+    <ul class="hint-list compact-list">
+      <li>这关不是看文本节点，而是看属性值如何闭合。</li>
+      <li>如果开发者拼接整段标签字符串，再整体标记 safe，就容易把属性边界也交出去。</li>
+    </ul>
+  </aside>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

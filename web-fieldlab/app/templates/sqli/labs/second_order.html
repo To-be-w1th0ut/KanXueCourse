@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card split-card">
+    <div>
+      <h2>保存筛选器</h2>
+      <form method="post" action="?mode={{ mode }}" class="form-grid">
+        <input type="hidden" name="action" value="save">
+        <label>筛选器名称<input type="text" name="filter_name" placeholder="例如：华东销售"></label>
+        <label>部门筛选值<input type="text" name="department_filter" placeholder="例如：Sales"></label>
+        <button class="button-primary" type="submit">保存</button>
+      </form>
+      {% if save_message %}<div class="result-banner success">{{ save_message }}</div>{% endif %}
+      <div class="table-card slim compact-table">
+        <table class="lab-table">
+          <thead><tr><th>ID</th><th>名称</th><th>筛选值</th><th>时间</th></tr></thead>
+          <tbody>
+            {% for row in saved_filters %}
+            <tr><td>{{ row.filter_id }}</td><td>{{ row.filter_name }}</td><td>{{ row.department_filter }}</td><td>{{ row.created_at }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div>
+      <h2>触发报表</h2>
+      <form method="post" action="?mode={{ mode }}" class="inline-button-row">
+        <input type="hidden" name="action" value="run">
+        <button class="button-secondary" type="submit">使用最新保存的筛选器生成报表</button>
+      </form>
+      {% if current_filter %}<p class="muted">当前加载筛选值：<code>{{ current_filter }}</code></p>{% endif %}
+      {% if report_rows %}
+      <div class="table-card slim compact-table">
+        <table class="lab-table">
+          <thead><tr><th>employee_id</th><th>name</th><th>department</th><th>title</th></tr></thead>
+          <tbody>
+            {% for row in report_rows %}
+            <tr><td>{{ row.employee_id }}</td><td>{{ row.full_name }}</td><td>{{ row.department }}</td><td>{{ row.title }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+      {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    </div>
+  </section>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

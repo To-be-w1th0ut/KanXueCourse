@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>课堂留言墙</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>author<input type="text" name="author" placeholder="例如：student-07"></label>
+      <label>body<textarea name="body" rows="4" placeholder="输入评论或 HTML 片段"></textarea></label>
+      <button class="button-primary" type="submit">发布评论</button>
+    </form>
+    <div class="stack-list">
+      {% for comment in comments %}
+      <article class="feed-card">
+        <div class="feed-meta"><strong>{{ comment.author }}</strong><span class="muted mono">{{ comment.created_at }}</span></div>
+        <div class="feed-body">{{ comment.body_rendered }}</div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'partials/hints.html' %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>管理报表</h2>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% else %}
+    <div class="table-card slim">
+      <table class="lab-table">
+        <thead><tr><th>username</th><th>role</th></tr></thead>
+        <tbody>
+          {% for row in report_rows %}
+          <tr><td>{{ row.username }}</td><td>{{ row.role }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

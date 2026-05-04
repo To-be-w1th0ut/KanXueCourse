@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>“已经修过”的状态组件</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>payload<input type="text" name="payload" value="{{ payload }}" placeholder="输入将写回组件的内容"></label>
+      <button class="button-primary" type="submit">应用到组件</button>
+    </form>
+    {% if filtered_payload is not none %}
+      <pre class="code-panel">filter result: {{ filtered_payload }}</pre>
+      <div class="preview-stage"><div class="preview-banner">{{ rendered_payload }}</div></div>
+    {% else %}
+      <div class="preview-stage"><div class="preview-banner muted">状态组件将在这里显示</div></div>
+    {% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>讲解提醒</h2>
+    <p>漏洞模式只删除少量关键词，仍然会把剩余内容按 HTML 渲染；安全模式则完全不依赖关键字替换。</p>
+  </aside>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

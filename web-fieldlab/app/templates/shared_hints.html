@@ -1,0 +1,20 @@
+<section class="detail-grid">
+  <article class="info-card">
+    <h2>学生提示面板</h2>
+    <ol class="hint-list">
+      {% for hint in lab.hints %}
+      <li>{{ hint }}</li>
+      {% endfor %}
+    </ol>
+  </article>
+  <article class="info-card">
+    <h2>教学讲解提示</h2>
+    <ul class="hint-list compact-list">
+      <li><strong>主轴：</strong>{{ lab.primary_class }}</li>
+      <li><strong>次轴：</strong>{{ lab.secondary_class }}</li>
+      <li><strong>触发：</strong>{{ lab.timing_class }}</li>
+      <li><strong>防御：</strong>{{ lab.defense_focus }}</li>
+      <li><strong>授课路径：</strong>{{ lab.teacher_path }}</li>
+    </ul>
+  </article>
+</section>

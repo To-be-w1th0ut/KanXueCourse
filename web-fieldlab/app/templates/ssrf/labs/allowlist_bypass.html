@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>字符串白名单预览器</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid inline-form">
+      <label>target_url<input type="text" name="target_url" value="{{ target_url }}"></label>
+      <button class="button-primary" type="submit">校验并抓取</button>
+    </form>
+    <pre class="code-panel">漏洞模式规则：target_url.startswith('{{ preview_gateway }}/')</pre>
+    {% if response_preview %}<pre class="code-panel">status={{ response_preview.status }}
+final_url={{ response_preview.final_url }}
+
+{{ response_preview.body }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

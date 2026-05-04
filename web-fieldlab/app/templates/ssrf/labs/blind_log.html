@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>后台探测任务</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid inline-form">
+      <label>target_url<input type="text" name="target_url" value="{{ target_url }}"></label>
+      <button class="button-primary" type="submit">发起探测</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="stack-list">
+      {% for row in logs %}
+      <article class="feed-card">
+        <div class="feed-meta"><strong>{{ row.target_url }}</strong><span class="muted mono">{{ row.created_at }}</span></div>
+        <p class="muted">{{ row.outcome }}</p>
+        <pre class="code-panel">{{ row.preview }}</pre>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

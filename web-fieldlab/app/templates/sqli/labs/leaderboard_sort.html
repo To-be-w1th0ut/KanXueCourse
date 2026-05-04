@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>教务排行榜</h2>
+    <form method="get" class="form-grid three-col">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>sort<input type="text" name="sort" value="{{ sort }}" placeholder="final_score"></label>
+      <label>dir<input type="text" name="dir" value="{{ direction }}" placeholder="DESC"></label>
+      <label>limit<input type="text" name="limit" value="{{ limit }}" placeholder="5"></label>
+      <button class="button-primary" type="submit">刷新</button>
+    </form>
+    <div class="table-card slim">
+      <table class="lab-table">
+        <thead><tr><th>student_no</th><th>name</th><th>class</th><th>score</th></tr></thead>
+        <tbody>
+          {% for row in rows %}
+          <tr><td>{{ row.student_no }}</td><td>{{ row.student_name }}</td><td>{{ row.class_name }}</td><td>{{ row.final_score }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>教学观察点</h2>
+    <ul class="hint-list compact-list">
+      <li>占位符能绑定值，不能直接绑定列名、方向关键字。</li>
+      <li>因此安全修复的关键在于：先限定候选集合，再拼接受控片段。</li>
+      <li>这类问题在线上业务里经常被忽视，因为开发者误以为“不是文本框就没事”。</li>
+    </ul>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

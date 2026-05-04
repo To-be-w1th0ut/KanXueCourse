@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card" id="postmessage-lab">
+    <h2>消息发送台</h2>
+    <div class="form-grid">
+      <label>card HTML<textarea id="postmessage-input" rows="6" placeholder="输入将通过 postMessage 发送到 iframe 的 HTML"></textarea></label>
+      <button class="button-primary" id="postmessage-send" type="button">发送到预览 iframe</button>
+    </div>
+    <iframe class="receiver-frame" id="postmessage-frame" src="/receiver/postmessage?mode={{ mode }}" title="receiver"></iframe>
+  </section>
+  <aside class="info-card">
+    <h2>讲解提醒</h2>
+    <p>漏洞模式里，receiver 会把消息里的 `card` 原样塞进 `iframe.srcdoc`。安全模式则校验 origin 并只按纯文本展示。</p>
+  </aside>
+</div>
+<script>
+window.FieldLabPostMessage = { receiverOrigin: window.location.origin };
+</script>
+{% include 'partials/hints.html' %}
+{% endblock %}
