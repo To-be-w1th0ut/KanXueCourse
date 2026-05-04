@@ -15,16 +15,22 @@
         <a href="/" class="brand-mark">FIELDLAB</a>
         <div class="brand-copy">
           <div class="eyebrow amber">Unified Web Vulnerability Range</div>
-          <div class="muted">SQLi / XSS / SSTI / SSRF / 授权缺陷，一套环境统一授课</div>
+          <div class="muted">SQLi / XSS / SSTI / SSRF / 越权 / 文件上传 / 支付逻辑 / 注入 / XXE / JSONP / Race</div>
         </div>
       </div>
-      <nav class="top-actions">
+      <nav class="top-actions wrap-row">
         <a href="/labs" class="nav-pill">全域总览</a>
         <a href="/domains/sqli" class="nav-pill">SQLi</a>
         <a href="/domains/xss" class="nav-pill">XSS</a>
         <a href="/domains/ssti" class="nav-pill">SSTI</a>
         <a href="/domains/ssrf" class="nav-pill">SSRF</a>
         <a href="/domains/authz" class="nav-pill">越权</a>
+        <a href="/domains/upload" class="nav-pill">上传</a>
+        <a href="/domains/payment" class="nav-pill">支付</a>
+        <a href="/domains/injection" class="nav-pill">注入</a>
+        <a href="/domains/xxe" class="nav-pill">XXE</a>
+        <a href="/domains/jsonp" class="nav-pill">JSONP</a>
+        <a href="/domains/race" class="nav-pill">Race</a>
         <a href="/healthz" class="nav-pill">健康检查</a>
         <a href="{{ request.path }}?mode=vuln" class="nav-pill {% if mode == 'vuln' %}active{% endif %}">漏洞模式</a>
         <a href="{{ request.path }}?mode=safe" class="nav-pill {% if mode == 'safe' %}active{% endif %}">安全模式</a>

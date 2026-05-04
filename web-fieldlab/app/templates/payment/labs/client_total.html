@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>客户端总价下单</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid three-col">
+      <label>product
+        <select name="product_id">{% for p in products %}<option value="{{ p.product_id }}">{{ p.name }} / ¥{{ p.price }}</option>{% endfor %}</select>
+      </label>
+      <label>quantity<input type="number" name="quantity" value="1"></label>
+      <label>client_total<input type="number" step="0.01" name="client_total" value="1.00"></label>
+      <button class="button-primary" type="submit">按客户端总价下单</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    <div class="stack-list">{% for row in orders %}<article class="feed-card"><div class="feed-meta"><strong>{{ row.order_ref }}</strong><span class="muted mono">{{ row.created_at }}</span></div><p>expected={{ row.expected_amount }} / paid={{ row.paid_amount }}</p><div class="muted small">{{ row.note }}</div></article>{% endfor %}</div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

@@ -1,0 +1,4 @@
+INFO boot complete
+INFO scheduler heartbeat ok
+WARN user submitted malformed expression once
+ERROR coupon callback duplicated in dry-run

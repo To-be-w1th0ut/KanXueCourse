@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>日志关键词检索</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>keyword<input type="text" name="keyword" value="{{ keyword }}" placeholder="例如：ERROR"></label>
+      <button class="button-primary" type="submit">执行 grep</button>
+    </form>
+    {% if output %}<pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

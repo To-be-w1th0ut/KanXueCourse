@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card" id="jsonp-legacy-lab">
+    <h2>Legacy JSONP 兼容接口</h2>
+    <div class="form-grid inline-form">
+      <label>callback<input type="text" id="jsonp-legacy-callback" value="fieldlabJsonpLegacy"></label>
+      <button class="button-primary" id="jsonp-legacy-run" type="button">调用 legacy 接口</button>
+    </div>
+    <pre class="code-panel">漏洞模式只替换 alert / eval 字样，但仍把 callback 当作 JS 代码位置。</pre>
+  </section>
+</div>
+<script>window.JsonpLegacy = { endpoint: '/api/jsonp/legacy', mode: '{{ mode }}' };</script>
+{% include 'shared_hints.html' %}
+{% endblock %}

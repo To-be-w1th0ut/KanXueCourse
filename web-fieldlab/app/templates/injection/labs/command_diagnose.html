@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>诊断命令拼装器</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>target<input type="text" name="target" value="{{ target }}" placeholder="例如：demo-host"></label>
+      <button class="button-primary" type="submit">执行诊断</button>
+    </form>
+    {% if output %}<pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

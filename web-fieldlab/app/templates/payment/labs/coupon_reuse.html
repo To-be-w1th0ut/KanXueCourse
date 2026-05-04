@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>优惠券下单台</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid inline-form">
+      <label>code<input type="text" name="code" placeholder="例如：WELCOME100"></label>
+      <button class="button-primary" type="submit">使用优惠券下单</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="table-card slim"><table class="lab-table"><thead><tr><th>code</th><th>discount</th><th>remaining</th></tr></thead><tbody>{% for row in coupons %}<tr><td>{{ row.code }}</td><td>{{ row.discount_amount }}</td><td>{{ row.remaining_uses }}</td></tr>{% endfor %}</tbody></table></div>
+    <div class="stack-list">{% for row in orders %}<article class="feed-card"><div class="feed-meta"><strong>{{ row.order_ref }}</strong><span class="muted mono">{{ row.created_at }}</span></div><p>{{ row.note }}</p><p>expected={{ row.expected_amount }} / paid={{ row.paid_amount }}</p></article>{% endfor %}</div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>资产同步 XML</h2>
+    <pre class="code-panel">提示：内部服务存在 http://intranet:7001/internal/metadata</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>xml_text<textarea name="xml_text" rows="8" placeholder="输入 XML 文档">{{ xml_text }}</textarea></label>
+      <button class="button-primary" type="submit">解析并同步</button>
+    </form>
+    {% if output %}<pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

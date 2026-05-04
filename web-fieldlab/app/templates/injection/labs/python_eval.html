@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>公式试算台</h2>
+    <pre class="code-panel">context = {{ context }}</pre>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>expr<input type="text" name="expr" value="{{ expr }}" placeholder="例如：price * quantity"></label>
+      <button class="button-primary" type="submit">求值</button>
+    </form>
+    {% if result is not none %}<pre class="code-panel">{{ result }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

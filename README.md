@@ -1,6 +1,8 @@
 # KanXueCourse
 
-这是一个统一的 Web 漏洞教学项目仓库，包含：
+这是一个统一的 Web 漏洞教学项目仓库。
+
+## 当前主项目
 
 - `web-fieldlab/`：统一版教学平台
   - SQL 注入
@@ -8,10 +10,19 @@
   - SSTI
   - SSRF
   - 越权（水平 / 垂直）
+  - 文件上传
+  - 支付逻辑漏洞
+  - 代码 / 命令注入
+  - XXE
+  - JSONP
+  - 条件竞争
+
+## 兼容保留
+
 - `legacy/sqli-fieldlab/`：早期独立 SQLi 靶场
 - `legacy/xss-fieldlab/`：早期独立 XSS 靶场
 
-## 推荐使用
+## 推荐使用方式
 
 优先使用统一版：
 
@@ -25,7 +36,7 @@ docker compose up --build
 
 - http://127.0.0.1:5070
 
-## 目录说明
+## 目录结构
 
 ```text
 KanXueCourse/

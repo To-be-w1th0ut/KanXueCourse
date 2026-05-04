@@ -14,13 +14,19 @@
 ./scripts/reset_lab.sh sqli-filters
 ```
 
-## XSS / SSTI / SSRF / 越权
+## 其它漏洞域
 
 ```bash
 ./scripts/reset_lab.sh xss
 ./scripts/reset_lab.sh ssti
 ./scripts/reset_lab.sh ssrf
 ./scripts/reset_lab.sh authz
+./scripts/reset_lab.sh upload
+./scripts/reset_lab.sh payment
+./scripts/reset_lab.sh injection
+./scripts/reset_lab.sh xxe
+./scripts/reset_lab.sh jsonp
+./scripts/reset_lab.sh race
 ```
 
 ## 细粒度
@@ -36,5 +42,16 @@
 ./scripts/reset_lab.sh authz-orders
 ./scripts/reset_lab.sh authz-notes
 ./scripts/reset_lab.sh authz-tickets
+./scripts/reset_lab.sh upload-public
+./scripts/reset_lab.sh payment-wallet
+./scripts/reset_lab.sh payment-coupons
+./scripts/reset_lab.sh payment-orders
+./scripts/reset_lab.sh injection-snippets
+./scripts/reset_lab.sh xxe-docs
+./scripts/reset_lab.sh jsonp-profiles
+./scripts/reset_lab.sh race-coupons
+./scripts/reset_lab.sh race-inventory
+./scripts/reset_lab.sh race-wallets
+./scripts/reset_lab.sh race-seats
 ./scripts/reset_lab.sh events
 ```

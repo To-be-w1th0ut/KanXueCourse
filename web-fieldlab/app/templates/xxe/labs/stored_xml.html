@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card split-card">
+    <div>
+      <h2>保存 XML 文档</h2>
+      <form method="post" action="?mode={{ mode }}" class="form-grid">
+        <input type="hidden" name="action" value="save">
+        <label>title<input type="text" name="title" placeholder="例如：expense-report"></label>
+        <label>body<textarea name="body" rows="8" placeholder="输入 XML">{% if docs %}{{ docs[0].body }}{% endif %}</textarea></label>
+        <button class="button-primary" type="submit">保存文档</button>
+      </form>
+      <div class="stack-list">{% for row in docs %}<article class="feed-card"><div class="feed-meta"><strong>{{ row.title }}</strong><span class="muted mono">{{ row.created_at }}</span></div><pre class="code-panel">{{ row.body }}</pre></article>{% endfor %}</div>
+    </div>
+    <div>
+      <h2>解析最新文档</h2>
+      <form method="post" action="?mode={{ mode }}"><input type="hidden" name="action" value="preview"><button class="button-secondary" type="submit">解析最新文档</button></form>
+      {% if output %}<pre class="code-panel">{{ output }}</pre>{% endif %}
+      {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

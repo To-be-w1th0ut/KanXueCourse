@@ -37,17 +37,11 @@ XSS_API_CARDS = [
 ]
 
 SSTI_TEMPLATES = [
-    {
-        "title": "weekly-mail",
-        "body": "<h2>Hello {{ student_name }}</h2><p>Your lab score is {{ score }}.</p>",
-    }
+    {"title": "weekly-mail", "body": "<h2>Hello {{ student_name }}</h2><p>Your lab score is {{ score }}.</p>"},
 ]
 
 SSTI_THEME_SNIPPETS = [
-    {
-        "name": "simple-banner",
-        "body": "<section class='preview-banner'><strong>{{ title }}</strong><p>{{ note }}</p></section>",
-    }
+    {"name": "simple-banner", "body": "<section class='preview-banner'><strong>{{ title }}</strong><p>{{ note }}</p></section>"},
 ]
 
 AUTH_USERS = [
@@ -71,3 +65,51 @@ AUTH_TICKETS = [
     {"ticket_id": 3001, "owner_user_id": 1, "subject": "Need lab extension", "status": "open", "internal_note": "仅管理员可批准延长时长"},
     {"ticket_id": 3002, "owner_user_id": 2, "subject": "Request score review", "status": "open", "internal_note": "需老师或管理员处理"},
 ]
+
+UPLOAD_SEEDS = [
+    {"lab_slug": "public-html", "original_name": "welcome.txt", "stored_name": "welcome.txt", "declared_type": "text/plain", "stored_path": "uploads/public/welcome.txt", "note": "默认示例文件", "is_public": 1},
+]
+
+PAYMENT_PRODUCTS = [
+    {"product_id": 1, "name": "Kanxue Hoodie", "price": 299.0, "stock": 20},
+    {"product_id": 2, "name": "FieldLab Coins Pack", "price": 99.0, "stock": 50},
+]
+
+PAYMENT_WALLETS = [
+    {"owner_label": "alice", "balance": 500.0, "credits": 0},
+]
+
+PAYMENT_COUPONS = [
+    {"code": "WELCOME100", "discount_amount": 100.0, "remaining_uses": 1, "active": 1},
+    {"code": "HALF50", "discount_amount": 50.0, "remaining_uses": 2, "active": 1},
+]
+
+PAYMENT_ORDERS = [
+    {"order_ref": "PAY-10001", "owner_label": "alice", "product_name": "Kanxue Hoodie", "expected_amount": 299.0, "paid_amount": 0.0, "status": "pending", "note": "用于重复回调示例", "callback_count": 0},
+]
+
+INJECTION_SNIPPETS = [
+    {"title": "default-rule", "body": "result = price * quantity\nsummary = f'price={price}, quantity={quantity}, total={result}'"},
+]
+
+XXE_DOCUMENTS = [
+    {"title": "invoice-sample", "body": "<?xml version='1.0'?><invoice><customer>Alice</customer><amount>299</amount></invoice>"},
+]
+
+JSONP_PROFILES = [
+    {"username": "alice", "email": "alice@class.local", "role": "student", "private_note": "FLAG{jsonp_sensitive_profile}"},
+    {"username": "bob", "email": "bob@class.local", "role": "student", "private_note": "Bob profile secret"},
+]
+
+RACE_COUPONS = [{"code": "RACE-ONCE", "remaining_uses": 1}]
+RACE_INVENTORY = [{"sku": "hoodie-one", "stock": 1}]
+RACE_WALLETS = [{"owner": "alice", "balance": 40.0}]
+RACE_SEATS = [{"event_name": "masterclass-seat", "remaining": 1}]
+
+UPLOAD_BANNER_HTML = "<div class='preview-banner'><strong>Upload Bulletin</strong><p>默认公告：禁止上传可执行脚本。</p></div>"
+INJECTION_AUDIT_LOG = """INFO boot complete
+INFO scheduler heartbeat ok
+WARN user submitted malformed expression once
+ERROR coupon callback duplicated in dry-run
+"""
+XXE_SECRET_TEXT = "FLAG{xxe_reads_local_file}"

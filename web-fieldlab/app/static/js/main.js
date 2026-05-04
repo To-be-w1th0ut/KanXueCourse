@@ -137,4 +137,41 @@
       frame.contentWindow.postMessage({ card: content }, window.FieldLabPostMessage.receiverOrigin);
     });
   }
+
+  window.fieldlabJsonpBasic = function (payload) {
+    window.fieldlab.record('jsonp-callback-reflect', JSON.stringify(payload), 'jsonp');
+  };
+  window.fieldlabJsonpProfile = function (payload) {
+    window.fieldlab.record('jsonp-profile-leak', JSON.stringify(payload), 'jsonp');
+  };
+  window.fieldlabJsonpLegacy = function (payload) {
+    window.fieldlab.record('jsonp-callback-blacklist', JSON.stringify(payload), 'jsonp');
+  };
+
+  function injectJsonp(src) {
+    const script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    document.body.appendChild(script);
+    script.onload = () => script.remove();
+    script.onerror = () => window.fieldlab.record('jsonp', 'script load failed', 'jsonp');
+  }
+
+  document.getElementById('jsonp-basic-run')?.addEventListener('click', () => {
+    const callback = document.getElementById('jsonp-basic-callback').value;
+    const q = document.getElementById('jsonp-basic-query').value;
+    injectJsonp(`${window.JsonpBasic.endpoint}?mode=${window.JsonpBasic.mode}&callback=${encodeURIComponent(callback)}&q=${encodeURIComponent(q)}`);
+  });
+
+  document.getElementById('jsonp-profile-run')?.addEventListener('click', () => {
+    const callback = document.getElementById('jsonp-profile-callback').value;
+    const username = document.getElementById('jsonp-profile-username').value;
+    injectJsonp(`${window.JsonpProfile.endpoint}?mode=${window.JsonpProfile.mode}&callback=${encodeURIComponent(callback)}&username=${encodeURIComponent(username)}`);
+  });
+
+  document.getElementById('jsonp-legacy-run')?.addEventListener('click', () => {
+    const callback = document.getElementById('jsonp-legacy-callback').value;
+    injectJsonp(`${window.JsonpLegacy.endpoint}?mode=${window.JsonpLegacy.mode}&callback=${encodeURIComponent(callback)}`);
+  });
+
 })();

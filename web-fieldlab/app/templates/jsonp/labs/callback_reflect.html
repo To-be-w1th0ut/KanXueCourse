@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card" id="jsonp-basic-lab">
+    <h2>JSONP 搜索接口</h2>
+    <div class="form-grid three-col">
+      <label>callback<input type="text" id="jsonp-basic-callback" value="fieldlabJsonpBasic"></label>
+      <label>query<input type="text" id="jsonp-basic-query" value="kanxue"></label>
+      <button class="button-primary" id="jsonp-basic-run" type="button">插入 script 标签执行</button>
+    </div>
+    <pre class="code-panel">/api/jsonp/search?callback=...&q=...</pre>
+  </section>
+</div>
+<script>window.JsonpBasic = { endpoint: '/api/jsonp/search', mode: '{{ mode }}' };</script>
+{% include 'shared_hints.html' %}
+{% endblock %}
