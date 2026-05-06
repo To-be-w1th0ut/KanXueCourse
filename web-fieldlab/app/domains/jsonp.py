@@ -131,7 +131,12 @@ def csrf_via_jsonp():
 def api_v2_orders():
     """新版 v2 端点：CORS 严格白名单（fetch 跨域会被拒）。"""
     origin = request.headers.get('Origin', '')
-    allowed = origin in ('http://localhost:5070', 'http://127.0.0.1:5070')
+    allowed_origins = {
+        'http://localhost:5070',
+        'http://127.0.0.1:5070',
+        request.host_url.rstrip('/'),
+    }
+    allowed = origin in allowed_origins
     payload = {
         'orders': [
             {'id': 'ORD-7001', 'amount': 199.0, 'status': 'paid'},

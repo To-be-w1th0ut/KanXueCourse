@@ -1,5 +1,56 @@
 (function () {
   const eventList = document.getElementById("event-list");
+  const localOriginPattern = /\bhttps?:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?/g;
+
+  function getRuntimeOrigin() {
+    if (window.location.origin && window.location.origin !== "null") {
+      return window.location.origin;
+    }
+    const port = window.location.port ? `:${window.location.port}` : "";
+    return `${window.location.protocol}//${window.location.hostname}${port}`;
+  }
+
+  function rewriteLocalOrigins() {
+    const root = document.body;
+    if (!root) return;
+
+    const runtimeOrigin = getRuntimeOrigin();
+    const skipTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA"]);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const textNodes = [];
+    let current;
+
+    while ((current = walker.nextNode())) {
+      if (current.parentElement && skipTags.has(current.parentElement.tagName)) {
+        continue;
+      }
+      if (localOriginPattern.test(current.nodeValue || "")) {
+        textNodes.push(current);
+      }
+      localOriginPattern.lastIndex = 0;
+    }
+
+    for (const node of textNodes) {
+      node.nodeValue = String(node.nodeValue || "").replace(localOriginPattern, runtimeOrigin);
+    }
+
+    for (const element of root.querySelectorAll("[href],[src],[value]")) {
+      for (const attr of ["href", "src", "value"]) {
+        const raw = element.getAttribute(attr);
+        if (!raw) continue;
+        if (!localOriginPattern.test(raw)) {
+          localOriginPattern.lastIndex = 0;
+          continue;
+        }
+        element.setAttribute(attr, raw.replace(localOriginPattern, runtimeOrigin));
+        localOriginPattern.lastIndex = 0;
+      }
+    }
+
+    window.FieldLabRuntime = { origin: runtimeOrigin };
+  }
+
+  rewriteLocalOrigins();
 
   async function loadEvents() {
     if (!eventList) return;

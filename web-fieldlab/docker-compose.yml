@@ -63,7 +63,7 @@ services:
       intranet:
         condition: service_healthy
     ports:
-      - "127.0.0.1:${HOST_WEB_PORT:-5070}:5000"
+      - "0.0.0.0:${HOST_WEB_PORT:-5070}:5000"
     volumes:
       - ./app/data:/app/data
       - lab_tmp:/tmp/lab
