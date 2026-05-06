@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>双扩展名上传</h2>
+    <pre class="code-panel">vuln 模式：白名单只看"最后一段扩展名"，但响应类型按"文件名中第一个已知扩展"决定。
+  例：evil.html.png  -> 白名单看 .png 放行，response 按 .html 服务（text/html）
+safe 模式：拒绝多扩展名，文件名必须是 name.ext。</pre>
+    <form method="post" action="?mode={{ mode }}" enctype="multipart/form-data" class="form-grid">
+      <label>upload_file<input type="file" name="upload_file"></label>
+      <button class="button-primary" type="submit">上传</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="stack-list">
+      {% for row in uploads %}
+      <article class="feed-card row-card">
+        <div><strong>{{ row.original_name }}</strong>
+          <div class="muted small mono">stored={{ row.stored_name }} / declared={{ row.declared_type }}</div></div>
+        <a class="button-secondary" href="/uploads/public/{{ row.upload_id }}?mode={{ mode }}" target="_blank">访问</a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

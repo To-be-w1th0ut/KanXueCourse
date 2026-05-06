@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>私信预览</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>message_id<input type="number" name="message_id" value="{{ message_id or '' }}"></label>
+      <button class="button-primary" type="submit">查看</button>
+    </form>
+    {% if message %}
+      <div class="preview-stage">
+        <strong>#{{ message.message_id }} {{ message.subject }}</strong>
+        <p class="muted small">sender={{ message.sender_user_id }} / receiver={{ message.receiver_user_id }}</p>
+        <pre class="code-panel">{{ message.body }}</pre>
+      </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>所有私信（教学展示）</h3>
+    <table class="lab-table"><thead><tr><th>id</th><th>sender</th><th>receiver</th><th>subject</th></tr></thead><tbody>
+      {% for m in messages %}<tr><td>{{ m.message_id }}</td><td>{{ m.sender_user_id }}</td><td>{{ m.receiver_user_id }}</td><td>{{ m.subject }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>大小写 / 空白 / null 字节扩展名</h2>
+    <pre class="code-panel">vuln 黑名单：只精确比对小写后缀 == ".html"。
+绕过示例（请用 curl 演示，浏览器会规整文件名）：
+  curl -F 'upload_file=@evil.html;filename=evil.HTML'              ...?mode=vuln
+  curl -F $'upload_file=@evil.html;filename=evil.html '             ...?mode=vuln
+  curl -F $'upload_file=@evil.html;filename=evil.html.'             ...?mode=vuln
+  curl --data-binary @<(printf -- '--X\r\nContent-Disposition: form-data; name="upload_file"; filename="evil.html\x00.png"\r\n\r\n<h1>pwn</h1>\r\n--X--\r\n') \
+       -H 'Content-Type: multipart/form-data; boundary=X' \
+       'http://127.0.0.1:5070/labs/upload/extension-case?mode=vuln'
+safe 模式：先 normalize（lower + strip + rstrip('. ') + 去 \x00）再校验黑名单。</pre>
+    <form method="post" action="?mode={{ mode }}" enctype="multipart/form-data" class="form-grid">
+      <label>upload_file<input type="file" name="upload_file"></label>
+      <button class="button-primary" type="submit">上传</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="stack-list">
+      {% for row in uploads %}
+      <article class="feed-card row-card">
+        <div><strong>{{ row.original_name }}</strong>
+          <div class="muted small mono">stored={{ row.stored_name }} / declared={{ row.declared_type }}</div></div>
+        <a class="button-secondary" href="/uploads/public/{{ row.upload_id }}?mode={{ mode }}" target="_blank">访问</a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

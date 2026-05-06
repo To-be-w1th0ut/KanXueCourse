@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>支付回调签名重放</h2>
+    {% if sample %}
+    <pre class="code-panel">合法回调样本（直接复制到表单提交即可）：
+  order_ref = {{ sample.order_ref }}
+  amount    = {{ sample.amount }}
+  nonce     = {{ sample.nonce }}
+  signature = {{ sample.signature }}
+
+vuln：服务端忽略 nonce，签名只覆盖 order_ref + amount。
+  → 重复提交同一份表单（甚至 nonce 留空）都会一直加 credits。
+safe：签名必须含 nonce，服务端记录已用 nonce 拒绝重放。</pre>
+    {% endif %}
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>order_ref<input type="text" name="order_ref" value="{{ sample.order_ref if sample else '' }}"></label>
+      <label>amount<input type="text" name="amount" value="{{ sample.amount if sample else '' }}"></label>
+      <label>nonce<input type="text" name="nonce" value="{{ sample.nonce if sample else '' }}"></label>
+      <label>signature<input type="text" name="signature" value="{{ sample.signature if sample else '' }}"></label>
+      <button class="button-primary" type="submit">提交回调</button>
+    </form>
+    {% if message %}<div class="result-banner success">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>钱包状态</h3>
+    <pre class="code-panel">balance = {{ wallet.balance }}, credits = {{ wallet.credits }}</pre>
+    <h3>已用 nonce（safe 模式去重表）</h3>
+    <table class="lab-table"><thead><tr><th>nonce</th><th>order</th><th>at</th></tr></thead><tbody>
+      {% for n in nonces %}<tr><td><code>{{ n.nonce }}</code></td><td>{{ n.order_ref }}</td><td class="muted mono">{{ n.used_at }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

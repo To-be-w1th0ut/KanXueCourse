@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>主题片段加载器</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>fragment<input type="text" name="fragment" value="{{ fragment }}" placeholder="vuln: 任意路径；safe: welcome / footer"></label>
+      <button class="button-primary" type="submit">加载片段</button>
+    </form>
+    <pre class="code-panel">vuln 提示：试 {{ secret_include }}
+safe 白名单：{{ whitelist }}</pre>
+    {% if rendered is not none %}<div class="preview-stage"><div class="preview-banner">{{ rendered }}</div></div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

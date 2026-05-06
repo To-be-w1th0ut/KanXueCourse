@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>欢迎横幅（welcome cookie 反射）</h2>
+    <p class="hint">本页会读取 cookie <code>welcome</code> 并写入 banner。<br>
+       在 DevTools 控制台执行：<code>document.cookie='welcome=&lt;img src=x onerror=fieldlab.record(\"cookie-reflect\")&gt;'</code> 后刷新。</p>
+    {% if rendered is not none %}
+      <div class="preview-stage"><div class="preview-banner">{{ rendered }}</div></div>
+      <pre class="code-panel">cookie welcome = {{ welcome }}</pre>
+    {% else %}
+      <div class="preview-stage"><div class="preview-banner muted">cookie 为空</div></div>
+    {% endif %}
+    <div class="inline-button-row">
+      <button class="button-secondary" type="button" onclick="document.cookie='welcome=&lt;img src=x onerror=fieldlab.record(%27cookie-reflect%27)&gt;';location.reload()">一键种入演示 cookie</button>
+      <button class="button-secondary" type="button" onclick="document.cookie='welcome=Hello FieldLab;max-age=3600';location.reload()">恢复默认</button>
+    </div>
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

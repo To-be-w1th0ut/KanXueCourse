@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>水印模板（vuln 模式上下文里有 read 函数）</h2>
+    <form method="get" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>source<textarea name="source" rows="5" placeholder="例如：watermark = {% raw %}{{ read(secret_path) }}{% endraw %}">{{ source }}</textarea></label>
+      <button class="button-primary" type="submit">渲染</button>
+    </form>
+    <pre class="code-panel">secret_path = {{ secret_path }}</pre>
+    <p class="hint">vuln 模式：模板上下文里直接注入 <code>read(path)</code> 函数。<br>
+       safe 模式：完全禁止任意文件读取（请改用预置的 watermark API）。</p>
+    {% if rendered is not none %}<div class="preview-stage"><div class="preview-banner">{{ rendered }}</div></div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

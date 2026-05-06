@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>render_template_string + 用户输入</h2>
+    <pre class="code-panel">vuln：render_template_string(user_input, ...) 把输入当模板源 → SSTI。
+safe：模板源固定，用户输入只作为 {% raw %}{{ msg }}{% endraw %} 变量传入。
+PoC：?q={% raw %}{{ 7*7 }}{% endraw %}  / ?q={% raw %}{{ config }}{% endraw %}</pre>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>q<input type="text" name="q" value="{{ user_input }}" style="width:100%"></label>
+      <button class="button-primary" type="submit">渲染</button>
+    </form>
+    {% if rendered is not none %}<h3>渲染结果</h3><pre class="code-panel">{{ rendered }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

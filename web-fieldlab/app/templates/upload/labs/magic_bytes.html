@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>Magic Bytes 校验</h2>
+    <pre class="code-panel">vuln 校验：仅看前 8 字节是否为 PNG signature（89 50 4E 47 0D 0A 1A 0A）。
+绕过 PoC：
+  printf '\x89PNG\r\n\x1a\n<h1>pwn from magic-bytes</h1>' > /tmp/evil.html
+  curl -F 'upload_file=@/tmp/evil.html' 'http://127.0.0.1:5070/labs/upload/magic-bytes?mode=vuln'
+落盘后 stored_name 保留 .html，访问该 URL 浏览器按 text/html 解析 → 触发渲染。
+safe 校验：signature + 必须以 PNG IEND chunk 结尾 + 强制 stored_name 为 .png。</pre>
+    <form method="post" action="?mode={{ mode }}" enctype="multipart/form-data" class="form-grid">
+      <label>upload_file<input type="file" name="upload_file"></label>
+      <button class="button-primary" type="submit">上传</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <div class="stack-list">
+      {% for row in uploads %}
+      <article class="feed-card row-card">
+        <div><strong>{{ row.original_name }}</strong>
+          <div class="muted small mono">stored={{ row.stored_name }} / declared={{ row.declared_type }}</div></div>
+        <a class="button-secondary" href="/uploads/public/{{ row.upload_id }}?mode={{ mode }}" target="_blank">访问</a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

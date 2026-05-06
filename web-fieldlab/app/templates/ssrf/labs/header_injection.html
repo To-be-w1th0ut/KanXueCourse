@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>带自定义请求头的抓取</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>target_url<input type="text" name="target_url" value="{{ target_url }}"></label>
+      <label>headers（每行一条 K: V）<textarea name="headers" rows="4" placeholder="X-Internal-Token: lab-internal-token">{{ headers }}</textarea></label>
+      <button class="button-primary" type="submit">抓取</button>
+    </form>
+    <pre class="code-panel">攻击：把 URL 设成内部 admin API，请求头里塞 X-Internal-Token: lab-internal-token
+safe 模式：禁止自定义敏感前缀头（X-Internal-* / Authorization / Cookie）。</pre>
+    {% if response_preview %}<pre class="code-panel">status={{ response_preview.status }}
+final_url={{ response_preview.final_url }}
+
+{{ response_preview.body }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

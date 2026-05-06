@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>受 CSP 保护的横幅</h2>
+    <p class="hint">本页响应头：<code>Content-Security-Policy: default-src 'self'; script-src 'nonce-{{ nonce }}'</code></p>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>payload<input type="text" name="payload" value="{{ payload }}" placeholder="输入将拼进 banner 的内容"></label>
+      <button class="button-primary" type="submit">渲染横幅</button>
+    </form>
+    {% if mode == 'vuln' %}
+      <div class="preview-stage">
+        <div class="preview-banner" data-nonce="{{ nonce }}">{{ rendered }}</div>
+      </div>
+      <pre class="code-panel">观察：banner 的 data-nonce 暴露了 CSP 的 nonce 值。
+攻击思路：<img src=x onerror="
+  var n=document.querySelector('[data-nonce]').dataset.nonce;
+  var s=document.createElement('script'); s.nonce=n;
+  s.textContent='fieldlab.record(\'csp-nonce-bypass\',\'CSP bypassed via DOM-leaked nonce\')';
+  document.body.appendChild(s);
+">
+</pre>
+    {% else %}
+      <div class="preview-stage">
+        <div class="preview-banner">{{ rendered }}</div>
+      </div>
+      <p class="hint">safe 模式：响应头不变，但页面里不再回显 nonce，攻击者无法读到。</p>
+    {% endif %}
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

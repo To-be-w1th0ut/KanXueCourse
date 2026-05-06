@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>错误回显抽取（File via parser error）</h2>
+    <pre class="code-panel">vuln：解析失败的完整 parser error 直接回显给客户端。
+   只要 file 实体被展开后又触发 parser 错误，错误信息里就会带文件内容。
+safe：只回显 "XML 解析失败"，详情进日志，且不解析实体。
+
+PoC（用秘密文件 {{ secret_path }} 触发解析错误）：
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE root [
+  &lt;!ENTITY secret SYSTEM "file://{{ secret_path }}"&gt;
+]&gt;
+&lt;root&gt;&amp;secret;&lt;invalid xml here&gt;&lt;/root&gt;
+
+观察：vuln 回显里会出现文件内容片段；safe 只剩一句通用错误。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>XML
+        <textarea name="xml_text" rows="9" style="width:100%; font-family:monospace">{{ xml_text }}</textarea>
+      </label>
+      <button class="button-primary" type="submit">解析</button>
+    </form>
+    {% if output is not none %}<h3>parsed</h3><pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

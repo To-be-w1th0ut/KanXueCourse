@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>校验时序：先存后扫</h2>
+    <pre class="code-panel">vuln 模式：上传 → 立刻发布到 public → 1.5 秒后启动扫描 → 命中禁词才删除
+        在窗口期内访问 URL 即可拿到内容（即使后续会被删除）。
+safe 模式：上传 → 写 quarantine → 同步扫描 → 通过才挪到 public。
+
+PoC（演示窗口期）：
+  curl -sF 'upload_file=@/tmp/evil.html' 'http://127.0.0.1:5070/labs/upload/toctou-scan?mode=vuln'
+  # 立刻并发抢访问 1 秒
+  for i in {1..20}; do curl -s "$URL_FROM_RESPONSE?mode=vuln" -o /tmp/r$i; sleep 0.05; done</pre>
+    <form method="post" action="?mode={{ mode }}" enctype="multipart/form-data" class="form-grid">
+      <label>upload_file<input type="file" name="upload_file"></label>
+      <button class="button-primary" type="submit">上传</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    {% if public_url %}<p>本次发布 URL：<a href="{{ public_url }}?mode={{ mode }}" target="_blank"><code>{{ public_url }}</code></a></p>{% endif %}
+    <div class="stack-list">
+      {% for row in uploads %}
+      <article class="feed-card row-card">
+        <div><strong>{{ row.original_name }}</strong>
+          <div class="muted small mono">stored={{ row.stored_name }}</div></div>
+        <a class="button-secondary" href="/uploads/public/{{ row.upload_id }}?mode={{ mode }}" target="_blank">访问</a>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

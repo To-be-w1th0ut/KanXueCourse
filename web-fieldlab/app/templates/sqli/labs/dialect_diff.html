@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>数据库方言差异速查</h2>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>按方言过滤（留空查全部）
+        <input type="text" name="dialect" value="{{ dialect }}"
+               placeholder="MySQL / PostgreSQL / SQL Server / Oracle / SQLite">
+      </label>
+      <button class="button-primary" type="submit">查询</button>
+    </form>
+    <p class="hint">vuln 模式下，本'文档页'的检索框仍然存在 SQLi：<br>
+      <code>?dialect=MySQL' UNION SELECT username,role,password,'leak' FROM users-- -&mode=vuln</code>
+    </p>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>对照表</h2>
+    <table class="data-table">
+      <thead><tr><th>方言</th><th>特性</th><th>示例</th><th>说明</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.dialect_name }}</td>
+          <td>{{ r.feature }}</td>
+          <td><code>{{ r.sample_payload }}</code></td>
+          <td>{{ r.note }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">（无匹配）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

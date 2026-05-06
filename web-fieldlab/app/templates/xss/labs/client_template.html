@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>搜索面板（前端模板拼 HTML）</h2>
+    <div class="form-grid inline-form">
+      <label>q<input type="text" id="csti-q" placeholder="试试：xss"></label>
+      <button class="button-primary" id="csti-go" type="button">搜索</button>
+    </div>
+    <div id="csti-result" class="stack-list"></div>
+    <p class="hint">vuln 模式：前端用模板字符串 <code>`&lt;article&gt;${item.title}&lt;/article&gt;`</code> 直接 innerHTML。<br>
+       safe 模式：使用 createElement + textContent 受控渲染。</p>
+    <pre class="code-panel">攻击：先调 /api/cards/search?q=&lt;img%20src=x%20onerror=fieldlab.record('client-template')&gt;
+然后页面把 API 字段拼进 innerHTML 即触发。</pre>
+  </section>
+</div>
+<script>
+(function(){
+  var mode = {{ mode | tojson }};
+  document.getElementById('csti-go').addEventListener('click', async function(){
+    var q = document.getElementById('csti-q').value;
+    var resp = await fetch('/api/cards/search?q=' + encodeURIComponent(q));
+    var data = await resp.json();
+    var box = document.getElementById('csti-result');
+    if (mode === 'vuln') {
+      // ❌ 模板字符串直接拼 innerHTML
+      box.innerHTML = (data.rows || []).map(function(it){
+        return '<article class="feed-card"><strong>' + it.title + '</strong><p>' + it.snippet + '</p></article>';
+      }).join('');
+    } else {
+      // ✅ DOM API 受控渲染
+      box.textContent = '';
+      (data.rows || []).forEach(function(it){
+        var card = document.createElement('article'); card.className = 'feed-card';
+        var t = document.createElement('strong'); t.textContent = it.title;
+        var p = document.createElement('p'); p.textContent = it.snippet;
+        card.appendChild(t); card.appendChild(p); box.appendChild(card);
+      });
+    }
+  });
+})();
+</script>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

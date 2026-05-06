@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>课件 Anchor 跳转（vuln 模式用 jQuery 1.x 风格 $() 解析 hash）</h2>
+    <p class="hint">点下面的按钮把 hash 写入地址栏，然后调用 <code>$(location.hash)</code>。<br>
+       payload：<code>#&lt;img src=x onerror=fieldlab.record('jquery-sink','$()&nbsp;parsed')&gt;</code></p>
+    <div class="form-grid">
+      <label>hash 内容<input type="text" id="jq-hash" value="#example"></label>
+      <div class="inline-button-row">
+        <button class="button-primary" id="jq-set" type="button">写入并跳转</button>
+        <button class="button-secondary" id="jq-now" type="button">用当前 hash 调用 $()</button>
+      </div>
+    </div>
+    <div id="jq-stage" class="preview-stage"><div class="preview-banner muted">将由 $() 解析后挂载</div></div>
+  </section>
+</div>
+<script>
+// 内联实现：复刻 jQuery 历史版本中"以 < 开头的字符串当 HTML 解析"的行为。
+(function(){
+  var mode = {{ mode | tojson }};
+  function dollar(arg){
+    if (typeof arg === 'string' && arg.charAt(0) === '#' && arg.indexOf('<') === 1) {
+      // ❌ vuln：把 #<...> 中的 < 之后部分作为 HTML 解析
+      var html = arg.slice(1);
+      var box = document.createElement('div'); box.innerHTML = html;
+      document.getElementById('jq-stage').firstElementChild.appendChild(box);
+      return;
+    }
+    if (typeof arg === 'string' && arg.charAt(0) === '<') {
+      var box = document.createElement('div'); box.innerHTML = arg;
+      document.getElementById('jq-stage').firstElementChild.appendChild(box);
+      return;
+    }
+    // 否则当选择器
+    var el = document.querySelector(arg);
+    if (el) el.scrollIntoView();
+  }
+  function safeNav(arg){
+    // ✅ safe：拒绝 < 开头，仅当选择器
+    if (typeof arg === 'string' && arg.indexOf('<') !== -1) {
+      document.getElementById('jq-stage').firstElementChild.textContent = '已拒绝：hash 以 < 开头';
+      return;
+    }
+    var el = document.querySelector(arg.replace(/[^a-zA-Z0-9_\-#.]/g, ''));
+    if (el) el.scrollIntoView();
+  }
+  document.getElementById('jq-set').addEventListener('click', function(){
+    location.hash = document.getElementById('jq-hash').value;
+    (mode === 'vuln' ? dollar : safeNav)(location.hash);
+  });
+  document.getElementById('jq-now').addEventListener('click', function(){
+    (mode === 'vuln' ? dollar : safeNav)(location.hash || '#');
+  });
+})();
+</script>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>环境变量值进入 shell</h2>
+    <pre class="code-panel">vuln：env['LC_FIELDLAB_TARGET']=target，再用 shell=True 执行
+       echo target=$LC_FIELDLAB_TARGET
+       shell 会展开 $(...)/`...`，target 可注入命令。
+safe：printenv ["LC_FIELDLAB_TARGET"]，不走 shell，原样输出。
+PoC：?target=$(id)   或 ?target=`id`</pre>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>target<input type="text" name="target" value="{{ target }}" style="width:100%"></label>
+      <button class="button-primary" type="submit">执行</button>
+    </form>
+    {% if output is not none %}<h3>output</h3><pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

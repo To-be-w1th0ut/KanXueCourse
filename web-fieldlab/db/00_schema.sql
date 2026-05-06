@@ -119,3 +119,87 @@ CREATE TABLE lab_flags (
   flag_value VARCHAR(120) NOT NULL,
   note VARCHAR(255) NOT NULL
 );
+
+-- =====================================================================
+-- SQLi 扩充关卡（L13-L22）所需的新表
+-- =====================================================================
+
+DROP TABLE IF EXISTS register_users;
+CREATE TABLE register_users (
+  register_id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(80) NOT NULL,
+  email VARCHAR(160) NOT NULL,
+  role VARCHAR(40) NOT NULL DEFAULT 'guest',
+  invite_source VARCHAR(120) NOT NULL DEFAULT 'public',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS cleanup_jobs;
+CREATE TABLE cleanup_jobs (
+  job_id INT AUTO_INCREMENT PRIMARY KEY,
+  target_table VARCHAR(80) NOT NULL,
+  expire_token VARCHAR(160) NOT NULL,
+  operator VARCHAR(80) NOT NULL,
+  note VARCHAR(200) NOT NULL DEFAULT '',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS audit_access_logs;
+CREATE TABLE audit_access_logs (
+  access_id INT AUTO_INCREMENT PRIMARY KEY,
+  visitor_ua VARCHAR(255) NOT NULL,
+  visit_path VARCHAR(255) NOT NULL,
+  visit_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS theme_preferences;
+CREATE TABLE theme_preferences (
+  pref_id INT AUTO_INCREMENT PRIMARY KEY,
+  theme_code VARCHAR(60) NOT NULL,
+  theme_label VARCHAR(120) NOT NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- L17 宽字节注入：使用 GBK 字符集模拟旧系统
+DROP TABLE IF EXISTS gbk_legacy_articles;
+CREATE TABLE gbk_legacy_articles (
+  article_id INT AUTO_INCREMENT PRIMARY KEY,
+  keyword VARCHAR(120) NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  body TEXT NOT NULL,
+  secret_tag VARCHAR(120) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=gbk COLLATE=gbk_chinese_ci;
+
+DROP TABLE IF EXISTS file_io_attempts;
+CREATE TABLE file_io_attempts (
+  attempt_id INT AUTO_INCREMENT PRIMARY KEY,
+  operation VARCHAR(40) NOT NULL,
+  target_path VARCHAR(255) NOT NULL,
+  result_brief VARCHAR(255) NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS dnslog_callbacks;
+CREATE TABLE dnslog_callbacks (
+  callback_id INT AUTO_INCREMENT PRIMARY KEY,
+  subdomain VARCHAR(160) NOT NULL,
+  decoded_data VARCHAR(255) NOT NULL DEFAULT '',
+  received_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS nosql_docs;
+CREATE TABLE nosql_docs (
+  doc_id INT AUTO_INCREMENT PRIMARY KEY,
+  collection VARCHAR(60) NOT NULL,
+  document_json JSON NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+DROP TABLE IF EXISTS dialect_samples;
+CREATE TABLE dialect_samples (
+  sample_id INT AUTO_INCREMENT PRIMARY KEY,
+  dialect_name VARCHAR(40) NOT NULL,
+  feature VARCHAR(80) NOT NULL,
+  sample_payload VARCHAR(255) NOT NULL,
+  note VARCHAR(255) NOT NULL DEFAULT ''
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>货币单位混淆（分 / 元）</h2>
+    <pre class="code-panel">vuln：服务端把客户端 amount 当"元"入账（不校验单位），
+  PoC：amount=1 下 ¥299 商品，订单 paid_amount=1 元就成单。
+safe：仅接受 amount_cents int，且必须 == price_cents。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>product
+        <select name="product_id">{% for p in products %}<option value="{{ p.product_id }}">{{ p.name }} / ¥{{ p.price }}</option>{% endfor %}</select>
+      </label>
+      {% if mode == 'vuln' %}
+      <label>amount（元，vuln）<input type="text" name="amount" value="1"></label>
+      {% else %}
+      <label>amount_cents（分，safe）<input type="number" name="amount_cents" value="29900"></label>
+      {% endif %}
+      <button class="button-primary" type="submit">下单</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>近期 currency-unit 订单</h3>
+    <table class="lab-table"><thead><tr><th>order_ref</th><th>product</th><th>expected</th><th>paid</th><th>note</th></tr></thead><tbody>
+      {% for o in orders %}<tr><td>{{ o.order_ref }}</td><td>{{ o.product_name }}</td><td>{{ o.expected_amount }}</td><td>{{ o.paid_amount }}</td><td class="muted small">{{ o.note }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

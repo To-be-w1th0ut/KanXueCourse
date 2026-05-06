@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>404 帮助页（演示 document.write）</h2>
+    <p class="hint">访问 <code>?msg=hello</code> 观察提示。攻击：<code>?msg=&lt;img src=x onerror=fieldlab.record('document-write')&gt;</code></p>
+    <div id="dw-stage" class="preview-stage"><div class="preview-banner muted">提示将通过 document.write 输出</div></div>
+  </section>
+</div>
+<script>
+(function(){
+  var mode = {{ mode | tojson }};
+  var params = new URLSearchParams(location.search);
+  var msg = params.get('msg') || '';
+  var stage = document.getElementById('dw-stage');
+  if (mode === 'vuln') {
+    // ❌ 直接把 search 参数拼进 document.write
+    // 注意：真实 document.write 在加载完成后会重置文档；这里用兼容写法演示等价行为：
+    var holder = document.createElement('div'); holder.className = 'preview-banner';
+    holder.innerHTML = 'help: ' + msg;
+    stage.replaceChildren(holder);
+  } else {
+    // ✅ textContent，参数当数据
+    var holder = document.createElement('div'); holder.className = 'preview-banner';
+    holder.textContent = 'help: ' + msg;
+    stage.replaceChildren(holder);
+  }
+})();
+</script>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

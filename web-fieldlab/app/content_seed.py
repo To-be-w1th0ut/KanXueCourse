@@ -70,6 +70,27 @@ AUTH_REPORTS = [
     {"report_id": 4001, "title": "discipline-board", "body": "Discipline board with private scores and conduct notes."},
 ]
 
+# 批次 3 新增：发票（带可枚举 access_token）+ 私信 + 用户偏好
+AUTH_INVOICES = [
+    {"invoice_id": 5001, "owner_user_id": 1, "amount": 299.0, "access_token": "tok-2024-0001", "pdf_path": "invoices/INV-5001.pdf"},
+    {"invoice_id": 5002, "owner_user_id": 2, "amount": 49.0,  "access_token": "tok-2024-0002", "pdf_path": "invoices/INV-5002.pdf"},
+    {"invoice_id": 5003, "owner_user_id": 3, "amount": 1280.0,"access_token": "tok-2024-0003", "pdf_path": "invoices/INV-5003.pdf"},
+    {"invoice_id": 5004, "owner_user_id": 4, "amount": 9999.0,"access_token": "tok-2024-0004", "pdf_path": "invoices/INV-5004.pdf"},
+]
+
+AUTH_MESSAGES = [
+    {"message_id": 6001, "sender_user_id": 3, "receiver_user_id": 1, "subject": "Lab feedback", "body": "Alice，关于 SQLi 关卡的额外建议在邮件附件里。"},
+    {"message_id": 6002, "sender_user_id": 4, "receiver_user_id": 3, "subject": "Admin note", "body": "Carol，请协助处理本周纪律报表，含薪资敏感信息。"},
+    {"message_id": 6003, "sender_user_id": 1, "receiver_user_id": 2, "subject": "Question", "body": "Bob，你那门 XSS 的笔记能借我抄一下吗？"},
+]
+
+AUTH_PREFS = [
+    {"user_id": 1, "theme": "light", "language": "zh", "newsletter": 1},
+    {"user_id": 2, "theme": "dark",  "language": "en", "newsletter": 0},
+    {"user_id": 3, "theme": "light", "language": "zh", "newsletter": 1},
+    {"user_id": 4, "theme": "dark",  "language": "en", "newsletter": 1},
+]
+
 UPLOAD_SEEDS = [
     {"lab_slug": "public-html", "original_name": "welcome.txt", "stored_name": "welcome.txt", "declared_type": "text/plain", "stored_path": "uploads/public/welcome.txt", "note": "默认示例文件", "is_public": 1},
 ]
@@ -90,6 +111,13 @@ PAYMENT_COUPONS = [
 
 PAYMENT_ORDERS = [
     {"order_ref": "PAY-10001", "owner_label": "alice", "product_name": "Kanxue Hoodie", "expected_amount": 299.0, "paid_amount": 0.0, "status": "pending", "note": "用于重复回调示例", "callback_count": 0},
+    {"order_ref": "PAY-20002", "owner_label": "alice", "product_name": "FieldLab Coins Pack", "expected_amount": 99.0, "paid_amount": 99.0, "status": "paid", "note": "用于退款 / 状态机演示", "callback_count": 1},
+    {"order_ref": "PAY-30003", "owner_label": "alice", "product_name": "Kanxue Hoodie", "expected_amount": 299.0, "paid_amount": 299.0, "status": "paid", "note": "用于签名重放演示", "callback_count": 1},
+]
+
+# 批次 4 新增：限量代金券（演示秒杀超卖）
+PAYMENT_FLASH_COUPONS = [
+    {"code": "FLASH-5", "remaining": 5, "total": 5},
 ]
 
 INJECTION_SNIPPETS = [
@@ -126,3 +154,11 @@ WARN user submitted malformed expression once
 ERROR coupon callback duplicated in dry-run
 """
 XXE_SECRET_TEXT = "FLAG{xxe_reads_local_file}"
+
+# =====================================================================
+# 批次 2 种子：XSS L13-L22 用到的新表
+# =====================================================================
+XSS_MXSS_DRAFTS = [
+    {"title": "default-draft", "raw_html": "<p>Hi <strong>FieldLab</strong></p>"},
+]
+

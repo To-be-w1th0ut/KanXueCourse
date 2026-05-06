@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>富文本草稿（vuln 模式只删 &lt;script&gt; 字面）</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>title<input type="text" name="title" placeholder="例如：weekly-notes"></label>
+      <label>raw_html<textarea name="raw_html" rows="5" placeholder="试试包含 noscript 或畸形属性的内容"></textarea></label>
+      <button class="button-primary" type="submit">保存草稿</button>
+    </form>
+    <p class="hint">经典 mXSS 思路：<code>&lt;noscript&gt;&lt;p title=&quot;&lt;/noscript&gt;&lt;img src=x onerror=fieldlab.record('mxss-sanitizer')&gt;&quot;&gt;&lt;/p&gt;&lt;/noscript&gt;</code></p>
+    <div class="stack-list">
+      {% for d in drafts %}
+      <article class="feed-card">
+        <div class="feed-meta"><strong>{{ d.title }}</strong><span class="muted mono">{{ d.created_at }}</span></div>
+        <div class="feed-body">{{ d.rendered }}</div>
+        <pre class="code-panel">stored: {{ d.raw_html }}</pre>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

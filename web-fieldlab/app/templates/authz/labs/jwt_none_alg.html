@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>JWT 校验台（vuln 模式接受 alg=none）</h2>
+    <pre class="code-panel">当前合法 token（HS256，role={{ current_auth_user.role }}）：
+{{ legit_token }}
+
+伪造思路：
+  1. 复制上方 token 的 payload 段，替换 role 为 admin。
+  2. 把 header 替换为 base64url({"alg":"none","typ":"JWT"})。
+  3. 第三段（签名）随便填或留空（base64url 任意）。
+对 vuln 模式提交即可获得 admin 解析结果。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>token<textarea name="token" rows="4">{{ submitted }}</textarea></label>
+      <button class="button-primary" type="submit">提交校验</button>
+    </form>
+    {% if decoded %}<pre class="code-panel">decoded = {{ decoded }}
+is_admin = {{ is_admin }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

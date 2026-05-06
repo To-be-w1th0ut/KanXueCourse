@@ -6,6 +6,8 @@ GROUP_ORDER = [
     '本地文件实体',
     '外部实体到内网请求',
     '存储后二次解析',
+    '参数实体 / 盲打',
+    '错误回显抽取',
 ]
 
 LABS = [
@@ -68,6 +70,46 @@ LABS = [
             '安全模式应让后续解析链也使用安全配置。',
         ],
         'reset': '使用 ./scripts/reset_lab.sh xxe-docs 重置 XML 文档。',
+    },
+    {
+        'domain': 'xxe',
+        'slug': 'parameter-entity-blind',
+        'title': 'L04 参数实体盲打（外接 DTD）',
+        'subtitle': '用 % 参数实体引用外部 DTD，让解析器去内网拉文件并触发回调。',
+        'difficulty': '高级',
+        'story': '资产同步器允许外部 DTD（load_dtd=True），% 实体可叠加文件读取与 OOB 触发。',
+        'endpoint': '/labs/xxe/parameter-entity-blind',
+        'primary_class': '参数实体 / 盲打',
+        'secondary_class': 'load_dtd / parameter entity',
+        'timing_class': '解析时立即触发',
+        'defense_focus': 'load_dtd=False + resolve_entities=False',
+        'teacher_path': '展示"无回显也能读文件"——参数实体把读到的内容拼进新的实体。',
+        'hints': [
+            'PoC：通过 <!ENTITY % remote SYSTEM "http://intranet:7001/public/card"> 让解析器主动出网。',
+            'safe 模式 load_dtd=False，外部 DTD 直接拒绝。',
+            '观察：vuln 模式即使 XML body 没回显，解析器日志里也能看到外接 DTD 的请求。',
+        ],
+        'reset': '无需重置；该关卡默认只读。',
+    },
+    {
+        'domain': 'xxe',
+        'slug': 'error-based-disclosure',
+        'title': 'L05 错误信息回显抽取',
+        'subtitle': '即使没有正常输出通道，畸形实体引用也能把文件内容塞进 parser error。',
+        'difficulty': '高级',
+        'story': '上传通道把解析失败的 XML 错误堆栈完整回显给前端，攻击者借此读 /etc/hostname。',
+        'endpoint': '/labs/xxe/error-based-disclosure',
+        'primary_class': '错误回显抽取',
+        'secondary_class': 'parser error leak',
+        'timing_class': '解析失败时触发',
+        'defense_focus': '禁止把解析错误明文回显 + 安全解析器',
+        'teacher_path': '强调"错误信息也是输出通道"——日志和 5xx 页面同样要做净化。',
+        'hints': [
+            'PoC：让 file 实体出现在一个会触发解析错误的位置（如非法 NCName），错误里就会带文件内容。',
+            'safe 模式不解析实体，且只回显通用错误。',
+            '生产建议：5xx 页面只显示 trace_id，详细信息只进日志。',
+        ],
+        'reset': '无需重置；该关卡默认只读。',
     },
 ]
 

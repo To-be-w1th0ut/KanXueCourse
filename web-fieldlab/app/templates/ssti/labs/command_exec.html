@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>"模板里也能跑命令"演示</h2>
+    <form method="get" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>source<textarea name="source" rows="5" placeholder="例如：whoami = {% raw %}{{ cmd.check_output(['id']).decode() }}{% endraw %}">{{ source }}</textarea></label>
+      <button class="button-primary" type="submit">渲染</button>
+    </form>
+    <p class="hint">vuln 模式：模板上下文里注入了一个 <code>cmd</code> 对象（白名单 <code>id/whoami/pwd/ls/date/uname/hostname</code>，避免课堂上真的暴露任意 RCE）。<br>
+       safe 模式：context 不再包含任何调用对象，攻击立即失效。</p>
+    {% if rendered is not none %}<div class="preview-stage"><pre class="code-panel">{{ rendered }}</pre></div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

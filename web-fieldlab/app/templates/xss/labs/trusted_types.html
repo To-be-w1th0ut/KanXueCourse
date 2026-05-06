@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>Trusted Types 演示</h2>
+    <p class="hint">本页响应头开启了 <code>require-trusted-types-for 'script'</code>。
+       vuln 模式 <code>trusted-types *</code> 等于完全没开；safe 模式只允许具名 policy。</p>
+    <div class="form-grid">
+      <label>payload<input type="text" id="tt-payload" value="<img src=x onerror=fieldlab.record('trusted-types')>" /></label>
+      <div class="inline-button-row">
+        <button class="button-primary" id="tt-default" type="button">用 default policy 写入</button>
+        <button class="button-secondary" id="tt-named" type="button">用具名 policy 写入</button>
+      </div>
+    </div>
+    <div id="tt-stage" class="preview-stage"><div class="preview-banner muted">渲染结果</div></div>
+    <pre class="code-panel" id="tt-log">log:</pre>
+  </section>
+</div>
+<script>
+(function(){
+  var stage = document.getElementById('tt-stage').firstElementChild;
+  var log = document.getElementById('tt-log');
+  function append(msg){ log.textContent += '\n' + msg; }
+
+  if (!window.trustedTypes || !window.trustedTypes.createPolicy) {
+    append('当前浏览器不支持 Trusted Types（Firefox/Safari 较老版本）。');
+    return;
+  }
+
+  // 尝试创建 default policy（vuln 模式 trusted-types * 会成功，safe 模式会失败）
+  var defaultOk = false, named;
+  try {
+    window.trustedTypes.createPolicy('default', { createHTML: function(s){ return s; } });
+    defaultOk = true; append('default policy 创建成功（说明 trusted-types 列表过宽）');
+  } catch (e) { append('default policy 被 CSP 拒绝：' + e.message); }
+  try {
+    named = window.trustedTypes.createPolicy('fieldlab-strict', {
+      createHTML: function(s){ return s.replace(/<script[\s\S]*?<\/script>/gi,''); }
+    });
+    append('具名 policy fieldlab-strict 创建成功');
+  } catch (e) { append('具名 policy 创建失败：' + e.message); }
+
+  document.getElementById('tt-default').addEventListener('click', function(){
+    var p = document.getElementById('tt-payload').value;
+    try { stage.innerHTML = p; append('innerHTML 直接写入成功（说明 default policy 起作用 = vuln）'); }
+    catch (e) { append('innerHTML 被 TT 拦截：' + e.message); }
+  });
+  document.getElementById('tt-named').addEventListener('click', function(){
+    var p = document.getElementById('tt-payload').value;
+    if (!named) { append('具名 policy 不存在'); return; }
+    try { stage.innerHTML = named.createHTML(p); append('用具名 policy 渲染'); }
+    catch (e) { append('被 TT 拦截：' + e.message); }
+  });
+})();
+</script>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>浮点累加精度</h2>
+    <pre class="code-panel">vuln：用 Python float（IEEE-754）累加，N 越大累出的 drift 越明显。
+safe：改用 Decimal 精确累加，drift 恒为 0。
+经典例子：unit=0.1, count=1000 期望 100.0，float 实际 99.99999999999986。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>count<input type="number" name="count" value="1000"></label>
+      <label>unit<input type="text" name="unit" value="0.1"></label>
+      <button class="button-primary" type="submit">批量充值</button>
+    </form>
+    {% if message %}<pre class="code-panel">{{ message }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

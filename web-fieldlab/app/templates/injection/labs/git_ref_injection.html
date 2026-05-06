@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>git ref 拼接命令注入</h2>
+    <pre class="code-panel">vuln：cmd = f"git --version && echo using-ref={ref}" + shell=True
+safe：ref 必须匹配 ^[A-Za-z0-9._/-]{1,64}$，且只 subprocess.run(["git", "--version"])
+PoC：?ref=HEAD;id   ?ref=$(id)
+（容器无 git 时 vuln 仍会用 sh 模拟拼接执行，PoC 仍可观测）</pre>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>ref<input type="text" name="ref" value="{{ ref }}" style="width:100%"></label>
+      <button class="button-primary" type="submit">执行</button>
+    </form>
+    {% if cmd_shown %}<h3>cmd</h3><pre class="code-panel">{{ cmd_shown }}</pre>{% endif %}
+    {% if output is not none %}<h3>output</h3><pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

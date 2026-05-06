@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'csrf/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>Host header 影响 token 计算</h2>
+    <pre class="code-panel">vuln 模式：token = HMAC(secret, Host + path)
+  当前 Host = {{ observed_host }}
+  当前期望 token = {{ expected_token }}
+攻击思路：用 curl --header 'Host: attacker.example' 自己算一遍 token，
+对应 Host 也写进 curl 即可绕过校验。
+safe 模式：token = HMAC(secret, sessionId + path)，与 Host 无关。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>host_token<input type="text" name="host_token" value="{{ expected_token }}"></label>
+      <label>to_user<input type="text" name="to_user" value="bob"></label>
+      <label>amount<input type="number" name="amount" value="10"></label>
+      <button class="button-primary" type="submit">转账</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

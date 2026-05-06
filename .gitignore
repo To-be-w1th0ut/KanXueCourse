@@ -6,3 +6,10 @@ __pycache__/
 *.sqlite
 *.sqlite3
 */data/*.db
+
+# 上传/XXE/注入 关卡运行时副作用文件
+web-fieldlab/app/data/mime_overrides.json
+web-fieldlab/app/data/uploads/
+web-fieldlab/app/data/cmd_audit.log
+web-fieldlab/app/data/xxe-secret.txt
+web-fieldlab/app/data/upload_banner.html

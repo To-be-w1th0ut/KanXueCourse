@@ -1,10 +1,15 @@
 from __future__ import annotations
 
 import ast
+import os
+import re
+import shlex
 import subprocess
 from pathlib import Path
 
-from flask import Blueprint, render_template, request
+import yaml
+from flask import Blueprint, render_template, render_template_string, request
+from markupsafe import escape
 
 from content_store import data_root, execute, query_all, query_one
 from injection_labs import LABS, build_taxonomy, get_lab
@@ -120,6 +125,194 @@ def command_grep():
         except Exception as exc:
             error = str(exc)
     return render_lab('command_grep.html', 'command-grep', keyword=keyword, output=output, error=error)
+
+
+# =====================================================================
+# 批次 4：injection L05-L10 共 6 个新关卡
+# =====================================================================
+
+# ---------- L05 render_template_string SSTI ----------
+@bp.route('/labs/injection/jinja-render-string', methods=['GET'])
+def jinja_render_string():
+    user_input = request.args.get('q', '')
+    rendered = None
+    error = None
+    if user_input:
+        try:
+            if current_mode() == 'vuln':
+                # ❌ 把用户输入当模板源码渲染
+                rendered = render_template_string(user_input, price=299, quantity=2)
+            else:
+                # ✅ 模板源固定，仅作为变量传入并 HTML 转义
+                rendered = render_template_string(
+                    '诊断面板回显：<code>{{ msg }}</code>',
+                    msg=user_input,
+                )
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+    return render_lab('jinja_render_string.html', 'jinja-render-string',
+                      user_input=user_input, rendered=rendered, error=error)
+
+
+# ---------- L06 YAML 不安全加载 ----------
+@bp.route('/labs/injection/yaml-load', methods=['GET', 'POST'])
+def yaml_load():
+    parsed_repr = None
+    error = None
+    raw = ''
+    if request.method == 'POST':
+        raw = request.form.get('yaml_text', '')
+        try:
+            if current_mode() == 'vuln':
+                # ❌ 完整 Loader 会处理 !!python/object/apply 等危险标签
+                data = yaml.load(raw, Loader=yaml.Loader)
+            else:
+                # ✅ safe_load 只接受基本数据类型
+                data = yaml.safe_load(raw)
+            parsed_repr = repr(data)
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+    return render_lab('yaml_load.html', 'yaml-load',
+                      raw=raw, parsed_repr=parsed_repr, error=error)
+
+
+# ---------- L07 环境变量注入 ----------
+@bp.route('/labs/injection/env-injection', methods=['GET'])
+def env_injection():
+    target = request.args.get('target', '')
+    output = None
+    error = None
+    if target:
+        try:
+            env = os.environ.copy()
+            env['LC_FIELDLAB_TARGET'] = target
+            if current_mode() == 'vuln':
+                # ❌ shell=True + 直接读取环境变量，shell 会展开 $(...) / ``
+                output = subprocess.check_output(
+                    'echo target=$LC_FIELDLAB_TARGET',
+                    shell=True, text=True, env=env, stderr=subprocess.STDOUT,
+                    timeout=5,
+                )
+            else:
+                # ✅ shell=False，环境变量值原样输出
+                output = subprocess.check_output(
+                    ['printenv', 'LC_FIELDLAB_TARGET'],
+                    text=True, env=env, stderr=subprocess.STDOUT,
+                    timeout=5,
+                )
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+    return render_lab('env_injection.html', 'env-injection',
+                      target=target, output=output, error=error)
+
+
+# ---------- L08 shlex.split 后 join 回去 ----------
+@bp.route('/labs/injection/shlex-shell-true', methods=['GET'])
+def shlex_shell_true():
+    keyword = request.args.get('keyword', '')
+    output = None
+    error = None
+    if keyword:
+        try:
+            if current_mode() == 'vuln':
+                # ❌ 经典假防御：shlex.split 之后又 join 回字符串 + shell=True
+                tokens = shlex.split(f'echo {keyword}')
+                rebuilt = ' '.join(tokens)
+                output = subprocess.check_output(
+                    rebuilt, shell=True, text=True, stderr=subprocess.STDOUT, timeout=5,
+                )
+            else:
+                # ✅ 保持 list 形式 + shell=False
+                output = subprocess.check_output(
+                    ['echo', keyword], text=True, stderr=subprocess.STDOUT, timeout=5,
+                )
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+    return render_lab('shlex_shell_true.html', 'shlex-shell-true',
+                      keyword=keyword, output=output, error=error)
+
+
+# ---------- L09 grep -E 正则可控 ----------
+@bp.route('/labs/injection/grep-extended-pattern', methods=['GET'])
+def grep_extended_pattern():
+    pattern = request.args.get('pattern', '')
+    output = None
+    error = None
+    log_file = data_root() / 'cmd_audit.log'
+    if not log_file.exists():
+        log_file.write_text('login attempt user=alice ip=10.0.0.1\n'
+                            'login attempt user=bob ip=10.0.0.2\n'
+                            'job dispatch id=42 status=ok\n')
+    if pattern:
+        try:
+            if current_mode() == 'vuln':
+                # ❌ shell=True + 直接拼 pattern
+                cmd = f'grep -E {pattern} {log_file}'
+                output = subprocess.check_output(
+                    cmd, shell=True, text=True, stderr=subprocess.STDOUT, timeout=5,
+                )
+            else:
+                # ✅ 正则在应用层用 re，不再调 shell
+                lines = log_file.read_text().splitlines()
+                try:
+                    compiled = re.compile(pattern)
+                except re.error as rex:
+                    raise ValueError(f'正则不合法：{rex}')
+                hits = [ln for ln in lines if compiled.search(ln)]
+                output = '\n'.join(hits) if hits else '(no match)'
+        except subprocess.CalledProcessError as exc:
+            output = exc.output
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+    return render_lab('grep_extended_pattern.html', 'grep-extended-pattern',
+                      pattern=pattern, output=output, error=error)
+
+
+# ---------- L10 git ref 拼接 ----------
+_SAFE_REF_RE = re.compile(r'^[A-Za-z0-9._/-]{1,64}$')
+
+
+@bp.route('/labs/injection/git-ref-injection', methods=['GET'])
+def git_ref_injection():
+    ref = request.args.get('ref', 'HEAD')
+    output = None
+    error = None
+    cmd_shown = None
+    if ref:
+        try:
+            if current_mode() == 'vuln':
+                # ❌ 拼字符串 + shell=True
+                cmd = f'git --version && echo using-ref={ref}'
+                cmd_shown = cmd
+                output = subprocess.check_output(
+                    cmd, shell=True, text=True, stderr=subprocess.STDOUT, timeout=5,
+                )
+            else:
+                # ✅ 严格校验 ref 字符集 + 参数数组
+                if not _SAFE_REF_RE.match(ref):
+                    raise ValueError('safe：ref 仅允许 [A-Za-z0-9._/-]，长度 1..64')
+                cmd_shown = ['git', '--version']
+                ver = subprocess.check_output(['git', '--version'], text=True, timeout=5).strip()
+                output = f'{ver}\nusing-ref={ref}'
+        except subprocess.CalledProcessError as exc:
+            output = exc.output
+        except FileNotFoundError:
+            error = 'git 未安装在容器中（这一关只演示拼接风险，不依赖真实 git）。'
+            if current_mode() == 'vuln':
+                # 用 sh 模拟一次拼接执行，让 PoC 仍可观测
+                cmd = f'echo no-git && echo using-ref={ref}'
+                cmd_shown = cmd
+                output = subprocess.check_output(
+                    cmd, shell=True, text=True, stderr=subprocess.STDOUT, timeout=5,
+                )
+                error = None
+            else:
+                output = f'safe 模式 ref 校验通过：{ref}'
+                error = None
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+    return render_lab('git_ref_injection.html', 'git-ref-injection',
+                      ref=ref, output=output, cmd_shown=cmd_shown, error=error)
 
 
 def domain_taxonomy():

@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>shlex.split 后又 join + shell=True（假防御）</h2>
+    <pre class="code-panel">vuln 写法：
+    tokens = shlex.split(f"echo {keyword}")
+    rebuilt = " ".join(tokens)             # ← 拼回字符串
+    subprocess.check_output(rebuilt, shell=True)   # ← 仍交给 shell
+
+safe 写法：subprocess.check_output(["echo", keyword])  # shell=False
+PoC：?keyword=foo;id   或 ?keyword=$(id)</pre>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>keyword<input type="text" name="keyword" value="{{ keyword }}" style="width:100%"></label>
+      <button class="button-primary" type="submit">执行</button>
+    </form>
+    {% if output is not none %}<h3>output</h3><pre class="code-panel">{{ output }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

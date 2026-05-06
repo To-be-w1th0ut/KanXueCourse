@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'csrf/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>关闭 MFA（演示点击劫持）</h2>
+    <pre class="code-panel">vuln 模式：响应不带 X-Frame-Options / frame-ancestors，攻击者可用透明 iframe 套住按钮。
+safe 模式：响应带 X-Frame-Options: DENY 与 CSP frame-ancestors 'none'。
+DevTools 的 Network 面板可以观察这些响应头。</pre>
+    <p>当前 MFA 状态：<strong>{{ '启用' if csrf_account.mfa_enabled else '关闭' }}</strong></p>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+      <button class="button-primary" type="submit">切换 MFA</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

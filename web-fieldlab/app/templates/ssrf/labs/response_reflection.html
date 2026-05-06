@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>"只回显元数据"的抓取页</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid inline-form">
+      <label>target_url<input type="text" name="target_url" value="{{ target_url }}"></label>
+      <button class="button-primary" type="submit">抓取</button>
+    </form>
+    <pre class="code-panel">说明：
+  vuln 模式 → 完整回显 final_url（含 path），攻击者可借助 redirect path 外带数据。
+  safe 模式 → 仅回显 scheme://hostname。
+建议尝试：http://intranet:7001/redirect/metadata（默认会跳到 /internal/metadata）</pre>
+    {% if response_preview %}
+      <pre class="code-panel">status={{ response_preview.status }}
+{% if response_preview.final_url %}final_url（vuln 完整回显）={{ response_preview.final_url }}{% endif %}
+{% if response_preview.final_url_redacted %}final_url（safe 仅 host）={{ response_preview.final_url_redacted }}{% endif %}</pre>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

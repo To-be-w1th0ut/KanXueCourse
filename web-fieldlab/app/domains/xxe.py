@@ -83,5 +83,49 @@ def stored_xml():
     return render_lab('stored_xml.html', 'stored-xml', docs=docs, output=output, error=error)
 
 
+# =====================================================================
+# 批次 5：XXE L04-L05 共 2 个新关卡
+# =====================================================================
+
+@bp.route('/labs/xxe/parameter-entity-blind', methods=['GET', 'POST'])
+def parameter_entity_blind():
+    """L04 参数实体盲打：load_dtd=True 时，% 实体可引用外部 DTD（出网到 internal-service）。
+    vuln：load_dtd=True，外部 DTD 会被拉取；safe：load_dtd=False，外接 DTD 拒绝。"""
+    xml_text = request.form.get('xml_text', '') if request.method == 'POST' else ''
+    output = None
+    error = None
+    parser_log = None
+    if xml_text:
+        try:
+            output = parse_xml(xml_text, safe=current_mode() == 'safe')
+            parser_log = '解析成功（如果 vuln + 含外部 DTD，解析器已发起出站请求）'
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+    return render_lab('parameter_entity_blind.html', 'parameter-entity-blind',
+                      xml_text=xml_text, output=output, error=error, parser_log=parser_log)
+
+
+@bp.route('/labs/xxe/error-based-disclosure', methods=['GET', 'POST'])
+def error_based_disclosure():
+    """L05 错误回显抽取：故意构造一个会触发 parser error 的位置去引用 file 实体。
+    vuln：把完整 error message 回显；safe：只回显通用错误，且不解析实体。"""
+    xml_text = request.form.get('xml_text', '') if request.method == 'POST' else ''
+    output = None
+    error = None
+    if xml_text:
+        try:
+            output = parse_xml(xml_text, safe=current_mode() == 'safe')
+        except Exception as exc:
+            if current_mode() == 'vuln':
+                # ❌ 完整回显 parser error（包含被实体展开的内容）
+                error = f'{type(exc).__name__}: {exc}'
+            else:
+                # ✅ 只回显通用错误
+                error = 'XML 解析失败（详情见服务端日志）'
+    secret_path = data_root() / 'xxe-secret.txt'
+    return render_lab('error_based_disclosure.html', 'error-based-disclosure',
+                      xml_text=xml_text, output=output, error=error, secret_path=secret_path)
+
+
 def domain_taxonomy():
     return build_taxonomy(), '主轴：实体扩展路径', '实体扩展路径', '外部资源类型'

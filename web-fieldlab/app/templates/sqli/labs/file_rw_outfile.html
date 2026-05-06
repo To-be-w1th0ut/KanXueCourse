@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>商品检索（高权限 DB 账号）</h2>
+    <form method="get" action="" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>q
+        <input type="text" name="q" value="{{ q }}" placeholder="例如 router">
+      </label>
+      <button class="button-primary" type="submit">检索</button>
+    </form>
+    <p class="hint">vuln 模式 + FILE 权限场景下的常见 payload：<br>
+      读：<code>?q=x' UNION SELECT 1,LOAD_FILE('/etc/hostname'),3-- -&mode=vuln</code><br>
+      写：<code>?q=x' UNION SELECT 1,2,3 INTO OUTFILE '{{ sandbox_dir }}/poc.txt'-- -&mode=vuln</code>
+    </p>
+    <p class="warn">⚠️ 容器内只允许写到 <code>{{ sandbox_dir }}</code>，且 <code>secure_file_priv</code> 限制了读取范围。</p>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>检索结果</h2>
+    <table class="data-table">
+      <thead><tr><th>id</th><th>sku</th><th>name</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr><td>{{ r.product_id }}</td><td>{{ r.sku }}</td><td>{{ r.name }}</td></tr>
+      {% else %}
+        <tr><td colspan="3">（无）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <h2 style="margin-top:1.5em">文件操作记录</h2>
+    <table class="data-table">
+      <thead><tr><th>id</th><th>op</th><th>target_path</th><th>at</th></tr></thead>
+      <tbody>
+      {% for a in attempts %}
+        <tr>
+          <td>{{ a.attempt_id }}</td>
+          <td>{{ a.operation }}</td>
+          <td><code>{{ a.target_path }}</code></td>
+          <td>{{ a.created_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="4">（无）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <h2 style="margin-top:1.5em">沙箱目录已写入文件</h2>
+    <ul>
+      {% for f in written_files %}
+        <li><code>{{ f.name }}</code>（{{ f.size }} 字节）</li>
+      {% else %}
+        <li>（暂无）</li>
+      {% endfor %}
+    </ul>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>编辑便签（vuln 模式接受任意字段）</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>note_id<input type="number" name="note_id" value="2002"></label>
+      <label>body<input type="text" name="body" value="rewritten by attacker"></label>
+      <label>owner_user_id（vuln 才会被吞下）<input type="text" name="owner_user_id" placeholder="例如把 owner 改成自己"></label>
+      <button class="button-primary" type="submit">提交</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>当前便签</h3>
+    <table class="lab-table"><thead><tr><th>note_id</th><th>owner</th><th>body</th><th>updated</th></tr></thead><tbody>
+      {% for n in notes %}<tr><td>{{ n.note_id }}</td><td>{{ n.owner_user_id }}</td><td>{{ n.body }}</td><td class="muted mono">{{ n.updated_at }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

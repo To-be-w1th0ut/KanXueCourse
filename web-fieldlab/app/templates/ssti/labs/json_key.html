@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>配置中心（JSON key 与 value 都进模板）</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>config_json<textarea name="config_json" rows="6" placeholder='例如 {"key": "{% raw %}{{ 7*7 }}{% endraw %}", "color": "{% raw %}{{ student_name }}{% endraw %}"}'>{{ config_json }}</textarea></label>
+      <button class="button-primary" type="submit">渲染配置</button>
+    </form>
+    {% if rendered_pairs is not none %}
+      <div class="preview-stage">
+        <table class="data-table">
+          <thead><tr><th>key</th><th>value</th></tr></thead>
+          <tbody>
+            {% for k, v in rendered_pairs %}
+            <tr><td>{{ k }}</td><td>{{ v }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <p class="hint">vuln 模式：key 与 value 都进 <code>render_template_string</code>。<br>
+       safe 模式：仅 escape 后展示。</p>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

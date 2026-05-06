@@ -7,6 +7,7 @@ GROUP_ORDER = [
     '库存竞争',
     '余额竞争',
     '名额竞争',
+    '跨表事务双花',
 ]
 
 LABS = [
@@ -89,6 +90,26 @@ LABS = [
             '安全模式通常会让状态检查与写入在同一个受控临界区。',
         ],
         'reset': '使用 ./scripts/reset_lab.sh race-seats 重置席位。',
+    },
+    {
+        'domain': 'race',
+        'slug': 'payment-double-spend',
+        'title': 'L05 跨表事务双花',
+        'subtitle': '钱包扣款和订单创建分两步走，并发下同一笔余额能买出两份商品。',
+        'difficulty': '高级',
+        'story': '收银台先 SELECT balance，再 INSERT order，再 UPDATE 钱包；并发下两笔订单能共享同一份余额。',
+        'endpoint': '/labs/race/payment-double-spend',
+        'primary_class': '跨表事务双花',
+        'secondary_class': '余额校验与订单创建分离',
+        'timing_class': '并发触发',
+        'defense_focus': '把"读余额 / 写订单 / 扣钱包"放进同一事务 + 条件更新',
+        'teacher_path': '把单表竞争上升到"跨表事务"——这是真实金融业务最常遇到的形态。',
+        'hints': [
+            'vuln：先 SELECT balance；再 sleep 制造窗口；再 INSERT order；再 UPDATE balance。',
+            'safe：单条 UPDATE wallets SET balance = balance - ? WHERE balance >= ? 按 rowcount 判定，再写订单。',
+            '观察 race_double_spend_orders 总数 与 balance 的差值——双花的钱在哪里。',
+        ],
+        'reset': '使用 ./scripts/reset_lab.sh race-double-spend 重置钱包与订单。',
     },
 ]
 

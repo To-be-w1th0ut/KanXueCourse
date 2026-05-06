@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>Zip Slip 解压路径穿越</h2>
+    <pre class="code-panel">解压目标目录：{{ target_root }}
+vuln 模式：直接 (target_root / member) 拼路径写文件，不校验 realpath。
+safe 模式：解压前用 realpath().relative_to(root) 校验，越界条目跳过。</pre>
+    <form method="post" action="?mode={{ mode }}" class="inline-button-row">
+      <input type="hidden" name="action" value="sample">
+      <button class="button-secondary" type="submit">下载示例 zip（含 ../escape.txt）</button>
+    </form>
+    <form method="post" action="?mode={{ mode }}" enctype="multipart/form-data" class="form-grid">
+      <input type="hidden" name="action" value="upload">
+      <label>upload_file（zip）<input type="file" name="upload_file" accept=".zip"></label>
+      <button class="button-primary" type="submit">上传并解压</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    {% if extracted %}
+    <h3>已解压条目（实际落地路径）</h3>
+    <pre class="code-panel">{% for p in extracted %}{{ p }}
+{% endfor %}</pre>
+    {% endif %}
+    {% if escaped_paths %}
+    <h3>safe 模式拦截的越界条目</h3>
+    <pre class="code-panel">{% for p in escaped_paths %}{{ p }}
+{% endfor %}</pre>
+    {% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

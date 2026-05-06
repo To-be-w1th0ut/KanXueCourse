@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>v2 收紧 CORS / v1 JSONP 仍在线</h2>
+    <pre class="code-panel">v2：/api/v2/orders        — Access-Control-Allow-Origin 仅白名单（fetch 跨域被拒）
+v1：/api/jsonp/v1/orders  — vuln 模式仍可 callback 旁路；safe 模式直接 410。
+
+直接打开对比：
+  v2 同源：     <a href="/api/v2/orders" target="_blank">/api/v2/orders</a>
+  v1 vuln：    <a href="/api/jsonp/v1/orders?callback=leak&mode=vuln" target="_blank">/api/jsonp/v1/orders?callback=leak&mode=vuln</a>
+  v1 safe：    <a href="/api/jsonp/v1/orders?callback=leak&mode=safe" target="_blank">/api/jsonp/v1/orders?callback=leak&mode=safe</a>
+
+"修了 CORS 没修 JSONP" 的真实危害：
+  攻击者写 &lt;script src="http://target/api/jsonp/v1/orders?callback=leak"&gt;
+  v2 的 CORS 白名单完全不参与；浏览器照样把 v1 响应当 JS 执行。</pre>
+    <h3>排查建议</h3>
+    <ul class="muted">
+      <li>每次 API 迁移都要全量 grep <code>callback</code>、<code>jsonp</code>、<code>application/javascript</code> 三类关键字。</li>
+      <li>把"下线旧端点"列入迁移 checklist 的强制项。</li>
+      <li>边缘代理上加规则：任何带 <code>?callback=</code> 的请求统一 410。</li>
+    </ul>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

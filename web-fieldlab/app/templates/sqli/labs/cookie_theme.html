@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>主题偏好（来自 Cookie）</h2>
+    <p class="hint">服务端 SQL 模板：<code>SELECT theme_code, theme_label, is_active FROM theme_preferences WHERE theme_code = '&lt;cookie.theme&gt;' AND is_active = 1</code></p>
+    <p>当前 Cookie <code>theme</code> = <strong>{{ theme_code }}</strong></p>
+    <p class="hint">在浏览器 DevTools → Application → Cookies 修改 <code>theme</code> 值，再刷新本页。<br>
+      vuln 模式下可尝试：<code>aurora' OR 1=1-- -</code> 或 <code>aurora' UNION SELECT theme_code,theme_label,0 FROM theme_preferences-- -</code>
+    </p>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>命中结果</h2>
+    <table class="data-table">
+      <thead><tr><th>theme_code</th><th>theme_label</th><th>is_active</th></tr></thead>
+      <tbody>
+      {% for r in rows %}
+        <tr>
+          <td>{{ r.theme_code }}</td>
+          <td>{{ r.theme_label }}</td>
+          <td>{{ r.is_active if 'is_active' in r else 1 }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="3">（无匹配）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="hint">隐藏主题（is_active=0）默认不可见，注入后才能被读出。</p>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

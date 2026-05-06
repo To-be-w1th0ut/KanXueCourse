@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>订单状态机</h2>
+    <pre class="code-panel">vuln：UPDATE status = ? 不限制转换路径。
+safe 状态机白名单：
+{% for src, dst_set in transitions.items() %}  {{ src }} -> {{ dst_set | sort | join(', ') if dst_set else '(终止)' }}
+{% endfor %}
+PoC：refunded -> paid -> refunded 可循环（vuln 允许，safe 拒绝）。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>order_ref<input type="text" name="order_ref" value="PAY-20002"></label>
+      <label>target_status
+        <select name="target_status">
+          <option value="paid">paid</option>
+          <option value="refunded">refunded</option>
+          <option value="partial_refund">partial_refund</option>
+          <option value="cancelled">cancelled</option>
+          <option value="pending">pending</option>
+        </select>
+      </label>
+      <button class="button-primary" type="submit">变更状态</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>近期订单</h3>
+    <table class="lab-table"><thead><tr><th>order_ref</th><th>product</th><th>paid</th><th>status</th></tr></thead><tbody>
+      {% for o in orders %}<tr><td>{{ o.order_ref }}</td><td>{{ o.product_name }}</td><td>{{ o.paid_amount }}</td><td><strong>{{ o.status }}</strong></td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

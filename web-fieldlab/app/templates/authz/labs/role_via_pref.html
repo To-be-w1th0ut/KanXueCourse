@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>账户偏好（PUT JSON）</h2>
+    <pre class="code-panel">当前 pref = {{ pref }}
+攻击思路（vuln）：
+  curl -X POST '/labs/authz/role-via-pref?mode=vuln' \
+    -H 'Content-Type: application/json' \
+    -d '{"theme":"dark","role":"admin"}'
+safe 模式：role 字段被字段白名单拒绝。</pre>
+    <div class="form-grid">
+      <label>JSON body<textarea id="rvp-body" rows="4">{"theme":"dark","role":"admin"}</textarea></label>
+      <button class="button-primary" id="rvp-go" type="button">PUT 偏好</button>
+    </div>
+    <pre class="code-panel" id="rvp-out">response:</pre>
+  </section>
+</div>
+<script>
+(function(){
+  var mode = {{ mode | tojson }};
+  document.getElementById('rvp-go').addEventListener('click', async function(){
+    var body = document.getElementById('rvp-body').value;
+    var resp = await fetch('/labs/authz/role-via-pref?mode=' + mode, {
+      method: 'POST', headers: {'Content-Type':'application/json'}, body: body
+    });
+    document.getElementById('rvp-out').textContent = 'status=' + resp.status + '\n' + (await resp.text());
+  });
+})();
+</script>
+{% include 'shared_hints.html' %}
+{% endblock %}

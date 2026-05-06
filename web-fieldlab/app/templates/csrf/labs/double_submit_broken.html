@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'csrf/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>Double Submit Cookie（错误实现）</h2>
+    <pre class="code-panel">vuln 模式：服务端只比较 Cookie["ds_token"] == form["ds_token"]。
+攻击思路：在攻击页里塞同样的 ds_token（攻击者从子域写 cookie 或直接走 form），
+即可让两侧"对得上"完成绕过。
+safe 模式：服务端用会话绑定的 csrf_token，与 cookie 无关。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>ds_token<input type="text" name="ds_token" value="{% if mode == 'vuln' %}demo-double-submit-token{% else %}{{ csrf_token_value }}{% endif %}"></label>
+      <label>to_user<input type="text" name="to_user" value="bob"></label>
+      <label>amount<input type="number" name="amount" value="10"></label>
+      <button class="button-primary" type="submit">转账</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

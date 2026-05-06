@@ -8,11 +8,15 @@ from typing import Any
 
 from config import Config
 from content_seed import (
+    AUTH_INVOICES,
+    AUTH_MESSAGES,
     AUTH_NOTES,
     AUTH_ORDERS,
+    AUTH_PREFS,
     AUTH_REPORTS,
     AUTH_TICKETS,
     AUTH_USERS,
+    PAYMENT_FLASH_COUPONS,
     CSRF_ACCOUNTS,
     CSRF_TRANSFER_LOGS,
     INJECTION_AUDIT_LOG,
@@ -38,6 +42,7 @@ from content_seed import (
     XSS_MARKDOWN_NOTES,
     XSS_PROFILE,
     XSS_SVG_SNIPPETS,
+    XSS_MXSS_DRAFTS,
 )
 
 SCHEMA = [
@@ -56,11 +61,20 @@ SCHEMA = [
     "CREATE TABLE IF NOT EXISTS auth_notes (note_id INTEGER PRIMARY KEY, owner_user_id INTEGER NOT NULL, body TEXT NOT NULL, updated_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS auth_tickets (ticket_id INTEGER PRIMARY KEY, owner_user_id INTEGER NOT NULL, subject TEXT NOT NULL, status TEXT NOT NULL, internal_note TEXT NOT NULL, updated_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS auth_reports (report_id INTEGER PRIMARY KEY, title TEXT NOT NULL, body TEXT NOT NULL)",
+    # 批次 3 新增（authz 扩充）
+    "CREATE TABLE IF NOT EXISTS auth_invoices (invoice_id INTEGER PRIMARY KEY, owner_user_id INTEGER NOT NULL, amount REAL NOT NULL, access_token TEXT NOT NULL UNIQUE, pdf_path TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS auth_messages (message_id INTEGER PRIMARY KEY, sender_user_id INTEGER NOT NULL, receiver_user_id INTEGER NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS auth_prefs (user_id INTEGER PRIMARY KEY, theme TEXT NOT NULL, language TEXT NOT NULL, newsletter INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS upload_entries (upload_id INTEGER PRIMARY KEY AUTOINCREMENT, lab_slug TEXT NOT NULL, original_name TEXT NOT NULL, stored_name TEXT NOT NULL, declared_type TEXT NOT NULL, stored_path TEXT NOT NULL, note TEXT NOT NULL, is_public INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS payment_products (product_id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL NOT NULL, stock INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS payment_wallets (owner_label TEXT PRIMARY KEY, balance REAL NOT NULL, credits INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS payment_coupons (code TEXT PRIMARY KEY, discount_amount REAL NOT NULL, remaining_uses INTEGER NOT NULL, active INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS payment_orders (order_id INTEGER PRIMARY KEY AUTOINCREMENT, order_ref TEXT NOT NULL UNIQUE, owner_label TEXT NOT NULL, product_name TEXT NOT NULL, expected_amount REAL NOT NULL, paid_amount REAL NOT NULL, status TEXT NOT NULL, note TEXT NOT NULL, callback_count INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)",
+    # 批次 4 支付扩充
+    "CREATE TABLE IF NOT EXISTS payment_refunds (refund_id INTEGER PRIMARY KEY AUTOINCREMENT, order_ref TEXT NOT NULL, refund_amount REAL NOT NULL, mode TEXT NOT NULL, created_at TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS payment_callback_nonces (nonce TEXT PRIMARY KEY, order_ref TEXT NOT NULL, used_at TEXT NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS payment_flash_coupons (code TEXT PRIMARY KEY, remaining INTEGER NOT NULL, total INTEGER NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS payment_flash_grants (grant_id INTEGER PRIMARY KEY AUTOINCREMENT, code TEXT NOT NULL, owner_label TEXT NOT NULL, mode TEXT NOT NULL, created_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS injection_snippets (snippet_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS xxe_documents (doc_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, body TEXT NOT NULL, created_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS jsonp_profiles (username TEXT PRIMARY KEY, email TEXT NOT NULL, role TEXT NOT NULL, private_note TEXT NOT NULL)",
@@ -69,21 +83,26 @@ SCHEMA = [
     "CREATE TABLE IF NOT EXISTS race_wallets (owner TEXT PRIMARY KEY, balance REAL NOT NULL)",
     "CREATE TABLE IF NOT EXISTS race_seats (event_name TEXT PRIMARY KEY, remaining INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS race_logs (log_id INTEGER PRIMARY KEY AUTOINCREMENT, lab_slug TEXT NOT NULL, attempts INTEGER NOT NULL, success_count INTEGER NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL)",
+    # 批次 5 新增：跨表事务双花
+    "CREATE TABLE IF NOT EXISTS race_ds_wallets (owner TEXT PRIMARY KEY, balance REAL NOT NULL)",
+    "CREATE TABLE IF NOT EXISTS race_ds_orders (order_id INTEGER PRIMARY KEY AUTOINCREMENT, owner TEXT NOT NULL, amount REAL NOT NULL, mode TEXT NOT NULL, created_at TEXT NOT NULL)",
     "CREATE TABLE IF NOT EXISTS csrf_accounts (username TEXT PRIMARY KEY, balance REAL NOT NULL, email_pref TEXT NOT NULL, mfa_enabled INTEGER NOT NULL)",
     "CREATE TABLE IF NOT EXISTS csrf_transfer_logs (log_id INTEGER PRIMARY KEY AUTOINCREMENT, from_user TEXT NOT NULL, to_user TEXT NOT NULL, amount REAL NOT NULL, note TEXT NOT NULL, source TEXT NOT NULL, created_at TEXT NOT NULL)",
+    # ----- 批次 2 新增表：XSS mXSS 草稿 -----
+    "CREATE TABLE IF NOT EXISTS xss_mxss_drafts (draft_id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, raw_html TEXT NOT NULL, created_at TEXT NOT NULL)",
 ]
 
 RESET_GROUPS = {
     'xss': ['xss_comments', 'xss_profiles', 'xss_bookmarks', 'xss_markdown_notes', 'xss_svg_snippets', 'xss_api_cards', 'browser_events'],
     'ssti': ['ssti_templates', 'ssti_themes'],
     'ssrf': ['ssrf_logs'],
-    'authz': ['auth_users', 'auth_orders', 'auth_notes', 'auth_tickets', 'auth_reports'],
+    'authz': ['auth_users', 'auth_orders', 'auth_notes', 'auth_tickets', 'auth_reports', 'auth_invoices', 'auth_messages', 'auth_prefs'],
     'upload': ['upload_entries'],
-    'payment': ['payment_products', 'payment_wallets', 'payment_coupons', 'payment_orders'],
+    'payment': ['payment_products', 'payment_wallets', 'payment_coupons', 'payment_orders', 'payment_refunds', 'payment_callback_nonces', 'payment_flash_coupons', 'payment_flash_grants'],
     'injection': ['injection_snippets'],
     'xxe': ['xxe_documents'],
     'jsonp': ['jsonp_profiles'],
-    'race': ['race_coupons', 'race_inventory', 'race_wallets', 'race_seats', 'race_logs'],
+    'race': ['race_coupons', 'race_inventory', 'race_wallets', 'race_seats', 'race_logs', 'race_ds_wallets', 'race_ds_orders'],
     'csrf': ['csrf_accounts', 'csrf_transfer_logs'],
     'events': ['browser_events'],
     'stored-comments': ['xss_comments'],
@@ -96,10 +115,14 @@ RESET_GROUPS = {
     'authz-orders': ['auth_orders'],
     'authz-notes': ['auth_notes'],
     'authz-tickets': ['auth_tickets'],
+    'authz-invoices': ['auth_invoices'],
+    'authz-messages': ['auth_messages'],
+    'authz-prefs': ['auth_prefs'],
     'upload-public': ['upload_entries'],
     'payment-wallet': ['payment_wallets'],
     'payment-coupons': ['payment_coupons'],
-    'payment-orders': ['payment_orders'],
+    'payment-orders': ['payment_orders', 'payment_refunds', 'payment_callback_nonces'],
+    'payment-flash': ['payment_flash_coupons', 'payment_flash_grants'],
     'injection-snippets': ['injection_snippets'],
     'xxe-docs': ['xxe_documents'],
     'jsonp-profiles': ['jsonp_profiles'],
@@ -107,8 +130,11 @@ RESET_GROUPS = {
     'race-inventory': ['race_inventory', 'race_logs'],
     'race-wallets': ['race_wallets', 'race_logs'],
     'race-seats': ['race_seats', 'race_logs'],
+    'race-double-spend': ['race_ds_wallets', 'race_ds_orders', 'race_logs'],
     'csrf-wallets': ['csrf_accounts'],
     'csrf-logs': ['csrf_transfer_logs'],
+    # 批次 2 新增
+    'xss-mxss': ['xss_mxss_drafts'],
 }
 
 
@@ -208,6 +234,7 @@ def _seed_tables(conn: sqlite3.Connection, now: str) -> None:
     conn.executemany('INSERT INTO payment_wallets (owner_label, balance, credits) VALUES (:owner_label, :balance, :credits)', PAYMENT_WALLETS)
     conn.executemany('INSERT INTO payment_coupons (code, discount_amount, remaining_uses, active) VALUES (:code, :discount_amount, :remaining_uses, :active)', PAYMENT_COUPONS)
     conn.executemany('INSERT INTO payment_orders (order_ref, owner_label, product_name, expected_amount, paid_amount, status, note, callback_count, created_at) VALUES (:order_ref, :owner_label, :product_name, :expected_amount, :paid_amount, :status, :note, :callback_count, :created_at)', [{**item, 'created_at': now} for item in PAYMENT_ORDERS])
+    conn.executemany('INSERT INTO payment_flash_coupons (code, remaining, total) VALUES (:code, :remaining, :total)', PAYMENT_FLASH_COUPONS)
     conn.executemany('INSERT INTO injection_snippets (title, body, created_at) VALUES (:title, :body, :created_at)', [{**item, 'created_at': now} for item in INJECTION_SNIPPETS])
     conn.executemany('INSERT INTO xxe_documents (title, body, created_at) VALUES (:title, :body, :created_at)', [{**item, 'created_at': now} for item in XXE_DOCUMENTS])
     conn.executemany('INSERT INTO jsonp_profiles (username, email, role, private_note) VALUES (:username, :email, :role, :private_note)', JSONP_PROFILES)
@@ -215,15 +242,25 @@ def _seed_tables(conn: sqlite3.Connection, now: str) -> None:
     conn.executemany('INSERT INTO race_inventory (sku, stock) VALUES (:sku, :stock)', RACE_INVENTORY)
     conn.executemany('INSERT INTO race_wallets (owner, balance) VALUES (:owner, :balance)', RACE_WALLETS)
     conn.executemany('INSERT INTO race_seats (event_name, remaining) VALUES (:event_name, :remaining)', RACE_SEATS)
+    conn.execute('INSERT INTO race_ds_wallets (owner, balance) VALUES (?, ?)', ('alice', 100.0))
     conn.executemany('INSERT INTO csrf_accounts (username, balance, email_pref, mfa_enabled) VALUES (:username, :balance, :email_pref, :mfa_enabled)', CSRF_ACCOUNTS)
     conn.executemany('INSERT INTO csrf_transfer_logs (from_user, to_user, amount, note, source, created_at) VALUES (:from_user, :to_user, :amount, :note, :source, :created_at)', [{**item, 'created_at': now} for item in CSRF_TRANSFER_LOGS])
 
 
 def seed_all(conn: sqlite3.Connection) -> None:
-    for table in ['xss_comments','xss_profiles','xss_bookmarks','xss_markdown_notes','xss_svg_snippets','xss_api_cards','browser_events','ssti_templates','ssti_themes','ssrf_logs','auth_users','auth_orders','auth_notes','auth_tickets','auth_reports','upload_entries','payment_products','payment_wallets','payment_coupons','payment_orders','injection_snippets','xxe_documents','jsonp_profiles','race_coupons','race_inventory','race_wallets','race_seats','race_logs','csrf_accounts','csrf_transfer_logs']:
+    for table in ['xss_comments','xss_profiles','xss_bookmarks','xss_markdown_notes','xss_svg_snippets','xss_api_cards','browser_events','ssti_templates','ssti_themes','ssrf_logs','auth_users','auth_orders','auth_notes','auth_tickets','auth_reports','auth_invoices','auth_messages','auth_prefs','upload_entries','payment_products','payment_wallets','payment_coupons','payment_orders','payment_refunds','payment_callback_nonces','payment_flash_coupons','payment_flash_grants','injection_snippets','xxe_documents','jsonp_profiles','race_coupons','race_inventory','race_wallets','race_seats','race_logs','race_ds_wallets','race_ds_orders','csrf_accounts','csrf_transfer_logs','xss_mxss_drafts']:
         conn.execute(f'DELETE FROM {table}')
     wipe_upload_files()
     _seed_tables(conn, utc_now())
+    _seed_batch2_tables(conn, utc_now())
+
+
+def _seed_batch2_tables(conn: sqlite3.Connection, now: str) -> None:
+    """批次 2 新增表的种子。"""
+    conn.executemany(
+        'INSERT INTO xss_mxss_drafts (title, raw_html, created_at) VALUES (:title, :raw_html, :created_at)',
+        [{**item, 'created_at': now} for item in XSS_MXSS_DRAFTS],
+    )
 
 
 def query_all(sql: str, args: tuple[Any, ...] = ()) -> list[dict[str, Any]]:
@@ -278,18 +315,26 @@ def reset_content(target: str) -> None:
                 conn.executemany('INSERT INTO auth_reports (report_id, title, body) VALUES (:report_id, :title, :body)', AUTH_REPORTS)
             if target in {'upload', 'upload-public'}:
                 wipe_upload_files()
+                # 清理 batch4 副作用文件（mime_overrides.json 等）
+                for legacy in ('mime_overrides.json',):
+                    legacy_path = data_root() / legacy
+                    if legacy_path.exists():
+                        legacy_path.unlink()
                 conn.executemany('INSERT INTO upload_entries (lab_slug, original_name, stored_name, declared_type, stored_path, note, is_public, created_at) VALUES (:lab_slug, :original_name, :stored_name, :declared_type, :stored_path, :note, :is_public, :created_at)', [{**item, 'created_at': now} for item in UPLOAD_SEEDS])
             if target == 'payment':
                 conn.executemany('INSERT INTO payment_products (product_id, name, price, stock) VALUES (:product_id, :name, :price, :stock)', PAYMENT_PRODUCTS)
                 conn.executemany('INSERT INTO payment_wallets (owner_label, balance, credits) VALUES (:owner_label, :balance, :credits)', PAYMENT_WALLETS)
                 conn.executemany('INSERT INTO payment_coupons (code, discount_amount, remaining_uses, active) VALUES (:code, :discount_amount, :remaining_uses, :active)', PAYMENT_COUPONS)
                 conn.executemany('INSERT INTO payment_orders (order_ref, owner_label, product_name, expected_amount, paid_amount, status, note, callback_count, created_at) VALUES (:order_ref, :owner_label, :product_name, :expected_amount, :paid_amount, :status, :note, :callback_count, :created_at)', [{**item, 'created_at': now} for item in PAYMENT_ORDERS])
+                conn.executemany('INSERT INTO payment_flash_coupons (code, remaining, total) VALUES (:code, :remaining, :total)', PAYMENT_FLASH_COUPONS)
             if target == 'payment-wallet':
                 conn.executemany('INSERT INTO payment_wallets (owner_label, balance, credits) VALUES (:owner_label, :balance, :credits)', PAYMENT_WALLETS)
             if target == 'payment-coupons':
                 conn.executemany('INSERT INTO payment_coupons (code, discount_amount, remaining_uses, active) VALUES (:code, :discount_amount, :remaining_uses, :active)', PAYMENT_COUPONS)
             if target == 'payment-orders':
                 conn.executemany('INSERT INTO payment_orders (order_ref, owner_label, product_name, expected_amount, paid_amount, status, note, callback_count, created_at) VALUES (:order_ref, :owner_label, :product_name, :expected_amount, :paid_amount, :status, :note, :callback_count, :created_at)', [{**item, 'created_at': now} for item in PAYMENT_ORDERS])
+            if target == 'payment-flash':
+                conn.executemany('INSERT INTO payment_flash_coupons (code, remaining, total) VALUES (:code, :remaining, :total)', PAYMENT_FLASH_COUPONS)
             if target in {'injection', 'injection-snippets'}:
                 (data_root() / 'cmd_audit.log').write_text(INJECTION_AUDIT_LOG)
                 conn.executemany('INSERT INTO injection_snippets (title, body, created_at) VALUES (:title, :body, :created_at)', [{**item, 'created_at': now} for item in INJECTION_SNIPPETS])
@@ -306,8 +351,12 @@ def reset_content(target: str) -> None:
                 conn.executemany('INSERT INTO race_wallets (owner, balance) VALUES (:owner, :balance)', RACE_WALLETS)
             if target in {'race', 'race-seats'}:
                 conn.executemany('INSERT INTO race_seats (event_name, remaining) VALUES (:event_name, :remaining)', RACE_SEATS)
+            if target in {'race', 'race-double-spend'}:
+                conn.execute('INSERT INTO race_ds_wallets (owner, balance) VALUES (?, ?)', ('alice', 100.0))
             if target in {'csrf', 'csrf-wallets'}:
                 conn.executemany('INSERT INTO csrf_accounts (username, balance, email_pref, mfa_enabled) VALUES (:username, :balance, :email_pref, :mfa_enabled)', CSRF_ACCOUNTS)
             if target in {'csrf', 'csrf-logs'}:
                 conn.executemany('INSERT INTO csrf_transfer_logs (from_user, to_user, amount, note, source, created_at) VALUES (:from_user, :to_user, :amount, :note, :source, :created_at)', [{**item, 'created_at': now} for item in CSRF_TRANSFER_LOGS])
+            if target in {'xss', 'xss-mxss'}:
+                conn.executemany('INSERT INTO xss_mxss_drafts (title, raw_html, created_at) VALUES (:title, :raw_html, :created_at)', [{**item, 'created_at': now} for item in XSS_MXSS_DRAFTS])
         conn.commit()

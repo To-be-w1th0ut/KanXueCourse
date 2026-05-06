@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
 import secrets
 from urllib.parse import urlparse
 
-from flask import Blueprint, jsonify, redirect, render_template, request, session
+from flask import Blueprint, jsonify, make_response, redirect, render_template, request, session
 
 from content_store import execute, query_all, query_one
 from csrf_labs import LABS, build_taxonomy, get_lab
@@ -183,6 +185,215 @@ def logout_and_mfa():
     account = current_account()
     logs = query_all('SELECT * FROM csrf_transfer_logs ORDER BY log_id DESC LIMIT 8')
     return render_lab('logout_and_mfa.html', 'logout-and-mfa', account=account, logs=logs, message=message, error=error)
+
+
+# =====================================================================
+# 批次 3：CSRF L05-L10 共 6 个新关卡
+# =====================================================================
+
+_HOST_TOKEN_SECRET = b'fieldlab-host-token-secret'
+
+
+def _do_transfer(account, to_user: str, amount: float, source: str):
+    if amount <= 0 or amount > account['balance']:
+        raise ValueError('金额非法或余额不足。')
+    execute('UPDATE csrf_accounts SET balance = balance - ? WHERE username = ?', (amount, account['username']))
+    execute('UPDATE csrf_accounts SET balance = balance + ? WHERE username = ?', (amount, to_user))
+    _log_transfer(account['username'], to_user, amount, source, source)
+
+
+# ---------- L05 SameSite 缺失 ----------
+@bp.route('/labs/csrf/samesite-missing', methods=['GET', 'POST'])
+def samesite_missing():
+    message = None
+    error = None
+    account = current_account()
+    if request.method == 'POST':
+        try:
+            if current_mode() == 'safe' and not _check_token(request.form.get('csrf_token')):
+                raise ValueError('安全模式：缺少或错误的 CSRF token。')
+            _do_transfer(account, request.form.get('to_user', 'bob'),
+                         float(request.form.get('amount', '0')), 'samesite-missing')
+            message = '转账完成（演示 cookie 自动携带）'
+        except Exception as exc:
+            error = str(exc)
+    logs = query_all('SELECT * FROM csrf_transfer_logs ORDER BY log_id DESC LIMIT 8')
+    resp = make_response(render_lab('samesite_missing.html', 'samesite-missing',
+                                     logs=logs, message=message, error=error))
+    if current_mode() == 'vuln':
+        # ❌ SameSite=None 无 Secure，浏览器允许跨站带 cookie
+        resp.set_cookie('cs_demo', 'fieldlab-vuln', samesite='None')
+    else:
+        resp.set_cookie('cs_demo', 'fieldlab-safe', samesite='Lax', secure=False, httponly=True)
+    return resp
+
+
+# ---------- L06 GET 触发副作用 ----------
+@bp.route('/labs/csrf/get-side-effect', methods=['GET', 'POST'])
+def get_side_effect():
+    message = None
+    error = None
+    account = current_account()
+    # vuln 模式允许 GET 直接转账；safe 模式必须 POST + token
+    triggered_method = request.method
+    if request.method == 'GET' and request.args.get('to_user'):
+        try:
+            if current_mode() == 'safe':
+                raise ValueError('安全模式：拒绝 GET 触发状态修改。')
+            _do_transfer(account, request.args.get('to_user'),
+                         float(request.args.get('amount', '0')), 'get-side-effect')
+            message = f'GET 转账完成 -> {request.args.get("to_user")}'
+        except Exception as exc:
+            error = str(exc)
+    elif request.method == 'POST':
+        try:
+            if current_mode() == 'safe' and not _check_token(request.form.get('csrf_token')):
+                raise ValueError('安全模式：缺少 CSRF token。')
+            _do_transfer(account, request.form.get('to_user', 'bob'),
+                         float(request.form.get('amount', '0')), 'get-side-effect')
+            message = 'POST 转账完成'
+        except Exception as exc:
+            error = str(exc)
+    logs = query_all('SELECT * FROM csrf_transfer_logs ORDER BY log_id DESC LIMIT 8')
+    return render_lab('get_side_effect.html', 'get-side-effect',
+                      logs=logs, message=message, error=error,
+                      triggered_method=triggered_method)
+
+
+# ---------- L07 Double Submit 错误实现 ----------
+@bp.route('/labs/csrf/double-submit-broken', methods=['GET', 'POST'])
+def double_submit_broken():
+    message = None
+    error = None
+    account = current_account()
+    if request.method == 'POST':
+        try:
+            cookie_token = request.cookies.get('ds_token', '')
+            form_token = request.form.get('ds_token', '')
+            if current_mode() == 'vuln':
+                # ❌ "Cookie==Form" 即放行；攻击者通过子域写 cookie + 表单同值即可绕过
+                if not (cookie_token and cookie_token == form_token):
+                    raise ValueError('vuln：Cookie 与 form 中的 ds_token 不一致。')
+            else:
+                # ✅ 必须与会话绑定的 server-side token 一致
+                if not _check_token(form_token) or form_token != session.get('csrf_token'):
+                    raise ValueError('safe：token 必须与服务端会话绑定。')
+            _do_transfer(account, request.form.get('to_user', 'bob'),
+                         float(request.form.get('amount', '0')), 'double-submit-broken')
+            message = '转账完成'
+        except Exception as exc:
+            error = str(exc)
+    logs = query_all('SELECT * FROM csrf_transfer_logs ORDER BY log_id DESC LIMIT 8')
+    # vuln 模式给浏览器塞一个示例 ds_token cookie，让学生看清"双提交"长啥样
+    resp = make_response(render_lab('double_submit_broken.html', 'double-submit-broken',
+                                     logs=logs, message=message, error=error))
+    if current_mode() == 'vuln':
+        resp.set_cookie('ds_token', 'demo-double-submit-token')
+    return resp
+
+
+# ---------- L08 CORS credentials 配错 ----------
+@bp.route('/labs/csrf/cors-credentials', methods=['GET', 'POST', 'OPTIONS'])
+def cors_credentials():
+    origin = request.headers.get('Origin', '')
+    message = None
+    error = None
+    account = current_account()
+    if request.method == 'OPTIONS':
+        resp = make_response('')
+    elif request.method == 'POST':
+        try:
+            if current_mode() == 'safe' and not _check_token(request.headers.get('X-CSRF-Token')):
+                raise ValueError('safe：缺少 X-CSRF-Token 头')
+            _do_transfer(account, request.form.get('to_user', 'bob'),
+                         float(request.form.get('amount', '0')), 'cors-credentials')
+            message = '转账完成'
+            resp = make_response(jsonify({'message': message, 'balance': account['balance']}))
+        except Exception as exc:
+            error = str(exc)
+            resp = make_response(jsonify({'error': error}), 400)
+    else:
+        logs = query_all('SELECT * FROM csrf_transfer_logs ORDER BY log_id DESC LIMIT 8')
+        resp = make_response(render_lab('cors_credentials.html', 'cors-credentials',
+                                         logs=logs, message=message, error=error,
+                                         observed_origin=origin))
+    # 关键差异：vuln 反射 Origin + Allow-Credentials；safe 严格白名单
+    if current_mode() == 'vuln':
+        if origin:
+            resp.headers['Access-Control-Allow-Origin'] = origin
+        resp.headers['Access-Control-Allow-Credentials'] = 'true'
+        resp.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-CSRF-Token'
+        resp.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
+    else:
+        # 仅同源
+        if origin and origin == request.host_url.rstrip('/'):
+            resp.headers['Access-Control-Allow-Origin'] = origin
+            resp.headers['Access-Control-Allow-Credentials'] = 'true'
+        resp.headers['Vary'] = 'Origin'
+    return resp
+
+
+# ---------- L09 点击劫持协同 CSRF ----------
+@bp.route('/labs/csrf/clickjacking-mfa', methods=['GET', 'POST'])
+def clickjacking_mfa():
+    message = None
+    error = None
+    account = current_account()
+    if request.method == 'POST':
+        try:
+            if current_mode() == 'safe' and not _check_token(request.form.get('csrf_token')):
+                raise ValueError('safe：缺少 csrf_token')
+            new_value = 0 if account['mfa_enabled'] else 1
+            execute('UPDATE csrf_accounts SET mfa_enabled = ? WHERE username = ?',
+                    (new_value, account['username']))
+            _log_transfer(account['username'], account['username'], 0.0,
+                          f'mfa_enabled -> {new_value}', 'clickjacking-mfa')
+            message = f'MFA 已切换为 {new_value}'
+        except Exception as exc:
+            error = str(exc)
+    account = current_account()
+    logs = query_all('SELECT * FROM csrf_transfer_logs ORDER BY log_id DESC LIMIT 8')
+    resp = make_response(render_lab('clickjacking_mfa.html', 'clickjacking-mfa',
+                                     account=account, logs=logs,
+                                     message=message, error=error))
+    if current_mode() == 'safe':
+        resp.headers['X-Frame-Options'] = 'DENY'
+        resp.headers['Content-Security-Policy'] = "frame-ancestors 'none'"
+    return resp
+
+
+# ---------- L10 Host header 影响 token ----------
+def _host_token(host: str, path: str) -> str:
+    return hmac.new(_HOST_TOKEN_SECRET, f'{host}|{path}'.encode(), hashlib.sha256).hexdigest()[:16]
+
+
+@bp.route('/labs/csrf/host-header-token', methods=['GET', 'POST'])
+def host_header_token():
+    message = None
+    error = None
+    account = current_account()
+    # vuln：用 request.host（来自 Host 头）参与 token 计算 -> 攻击者改 Host 即可
+    # safe：用服务端 secret + session id 计算 token
+    path = '/labs/csrf/host-header-token'
+    if current_mode() == 'vuln':
+        expected = _host_token(request.host, path)
+    else:
+        sid = session.get('csrf_token') or csrf_token()
+        expected = hmac.new(_HOST_TOKEN_SECRET, f'{sid}|{path}'.encode(), hashlib.sha256).hexdigest()[:16]
+    if request.method == 'POST':
+        submitted = request.form.get('host_token', '')
+        try:
+            if not hmac.compare_digest(submitted, expected):
+                raise ValueError('host_token 不匹配。')
+            _do_transfer(account, request.form.get('to_user', 'bob'),
+                         float(request.form.get('amount', '0')), 'host-header-token')
+            message = '转账完成'
+        except Exception as exc:
+            error = str(exc)
+    logs = query_all('SELECT * FROM csrf_transfer_logs ORDER BY log_id DESC LIMIT 8')
+    return render_lab('host_header_token.html', 'host-header-token',
+                      logs=logs, message=message, error=error,
+                      expected_token=expected, observed_host=request.host)
 
 
 @bp.route('/labs/csrf/attack-transfer')

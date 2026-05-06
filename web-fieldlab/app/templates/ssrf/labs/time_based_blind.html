@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>无回显抓取器（只告诉你"任务完成"）</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid inline-form">
+      <label>target_url<input type="text" name="target_url" value="{{ target_url }}"></label>
+      <button class="button-primary" type="submit">触发抓取</button>
+    </form>
+    <pre class="code-panel">对比测试：
+  http://intranet:7001/slow?seconds=1
+  http://intranet:7001/slow?seconds=4
+  http://intranet:7001/internal/metadata（应秒回）
+  http://10.255.255.1/                   （应超时）
+safe 模式：补足固定耗时（time-based padding）抹平 timing oracle。</pre>
+    {% if elapsed is not none %}<div class="result-banner warning">任务已完成，耗时：{{ elapsed }} 秒</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

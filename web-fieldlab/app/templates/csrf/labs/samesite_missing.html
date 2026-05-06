@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'csrf/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>转账（演示 SameSite 差异）</h2>
+    <pre class="code-panel">vuln 模式：Set-Cookie cs_demo=...; SameSite=None
+safe 模式：Set-Cookie cs_demo=...; SameSite=Lax; HttpOnly
+打开浏览器 DevTools 的 Application > Cookies 对比观察。</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+      <label>to_user<input type="text" name="to_user" value="bob"></label>
+      <label>amount<input type="number" name="amount" value="10"></label>
+      <button class="button-primary" type="submit">转账</button>
+    </form>
+    {% if message %}<div class="result-banner success">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>账户余额</h3>
+    <table class="lab-table"><thead><tr><th>username</th><th>balance</th><th>mfa</th></tr></thead><tbody>
+      {% for a in csrf_accounts %}<tr><td>{{ a.username }}</td><td>{{ a.balance }}</td><td>{{ a.mfa_enabled }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

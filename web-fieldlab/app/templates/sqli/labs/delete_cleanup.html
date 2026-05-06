@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>清理任务（按 token 删除过期记录）</h2>
+    <p class="hint">服务端 SQL 模板：<code>DELETE FROM cleanup_jobs WHERE expire_token = '&lt;token&gt;'</code></p>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>expire_token
+        <input type="text" name="expire_token"
+               placeholder="vuln 模式可尝试：x' OR '1'='1">
+      </label>
+      <button class="button-primary" type="submit">执行清理</button>
+    </form>
+    {% if affected is not none %}
+      <div class="result-banner {{ 'success' if affected > 0 else 'warning' }}">
+        本次共删除 <strong>{{ affected }}</strong> 行（vuln 模式下，OR 1=1 会清空整张表）。
+      </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>当前剩余清理任务</h2>
+    <table class="data-table">
+      <thead><tr><th>id</th><th>target_table</th><th>token</th><th>operator</th><th>note</th></tr></thead>
+      <tbody>
+      {% for j in jobs %}
+        <tr>
+          <td>{{ j.job_id }}</td>
+          <td>{{ j.target_table }}</td>
+          <td>{{ j.expire_token }}</td>
+          <td>{{ j.operator }}</td>
+          <td>{{ j.note }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5">（表已被清空，请用 ./scripts/reset_lab.sh sqli-cleanup 恢复）</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

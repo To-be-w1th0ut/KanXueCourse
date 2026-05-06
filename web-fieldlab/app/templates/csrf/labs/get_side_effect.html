@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'csrf/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>"快捷转账"接口（vuln 接受 GET）</h2>
+    <pre class="code-panel">vuln 模式可用：
+  GET /labs/csrf/get-side-effect?mode=vuln&to_user=mallory&amount=5
+攻击 PoC：在任意页面塞 &lt;img src="..."&gt; 让浏览器自动加载即触发。
+safe 模式：拒绝 GET，必须 POST + token。</pre>
+    <p>当前请求方法：<code>{{ triggered_method }}</code></p>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+      <label>to_user<input type="text" name="to_user" value="bob"></label>
+      <label>amount<input type="number" name="amount" value="10"></label>
+      <button class="button-primary" type="submit">POST 转账（safe 路径）</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>近期日志</h3>
+    <table class="lab-table"><thead><tr><th>id</th><th>from</th><th>to</th><th>amount</th><th>source</th></tr></thead><tbody>
+      {% for l in logs %}<tr><td>{{ l.log_id }}</td><td>{{ l.from_user }}</td><td>{{ l.to_user }}</td><td>{{ l.amount }}</td><td class="muted">{{ l.source }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'xss/partials/lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>客服挂件（callback 反射进 inline script）</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>callback<input type="text" name="callback" value="{{ callback }}" placeholder="默认应只能是合法标识符"></label>
+      <button class="button-primary" type="submit">挂载挂件</button>
+    </form>
+    {% if callback %}
+      {% if accepted %}
+        {{ inline_script }}
+        <pre class="code-panel">已注入 inline script，callback={{ callback }}</pre>
+      {% else %}
+        <pre class="error-box">{{ error }}</pre>
+      {% endif %}
+    {% endif %}
+    <p class="hint">vuln 模式攻击：<code>?callback=foo;fieldlab.record(%27callback-widget%27);//</code><br>
+       safe 模式：仅放行 <code>[A-Za-z_][A-Za-z0-9_]*</code> 的合法标识符。</p>
+  </section>
+</div>
+{% include 'xss/partials/hints.html' %}
+{% endblock %}

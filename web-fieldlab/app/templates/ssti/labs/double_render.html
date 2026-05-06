@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>邮件预览（title + body 都进引擎）</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>title<input type="text" name="title" value="{{ title }}" placeholder="例如：{% raw %}{{ 7*7 }}{% endraw %}-周报"></label>
+      <label>body<textarea name="body" rows="5" placeholder="补丁只过滤了 body 中的 {% raw %}{{ }}{% endraw %}">{{ body }}</textarea></label>
+      <button class="button-primary" type="submit">预览</button>
+    </form>
+    <p class="hint">vuln 模式：补丁只过滤了 body 的 <code>{% raw %}{{{% endraw %}</code>/<code>{% raw %}}}{% endraw %}</code>，title 完全没过 → 用 title 注入即可。</p>
+    {% if rendered_title is not none %}
+      <div class="preview-stage">
+        <h3 class="preview-banner">{{ rendered_title }}</h3>
+        <div class="preview-banner">{{ rendered_body }}</div>
+      </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

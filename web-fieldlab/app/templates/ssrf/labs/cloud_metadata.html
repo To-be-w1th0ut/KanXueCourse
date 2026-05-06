@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>抓取（演示用 intranet /latest/meta-data/* 模拟 IMDS）</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid inline-form">
+      <label>target_url<input type="text" name="target_url" value="{{ target_url }}"></label>
+      <button class="button-primary" type="submit">抓取</button>
+    </form>
+    <pre class="code-panel">提示：
+  http://intranet:7001/latest/meta-data/iam/security-credentials/lab-role
+  http://intranet:7001/latest/meta-data/instance-id
+真实云上对应 169.254.169.254。
+safe 模式：拒绝 link-local 网段 + 拒绝 path 含 /latest/meta-data。</pre>
+    {% if response_preview %}<pre class="code-panel">status={{ response_preview.status }}
+final_url={{ response_preview.final_url }}
+
+{{ response_preview.body }}</pre>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

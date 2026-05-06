@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }} - FieldLab{% endblock %}
+{% block content %}
+{% include 'sqli/partials/lab_header.html' %}
+<div class="workbench two-col">
+  <section class="console-card">
+    <h2>新生注册接口（教学）</h2>
+    <p class="hint">服务端 SQL 模板：<code>INSERT INTO register_users (username, email, invite_source) VALUES ('&lt;username&gt;', '&lt;email&gt;', '&lt;invite_source&gt;')</code></p>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>用户名<input type="text" name="username" placeholder="例如：carol" required></label>
+      <label>邮箱<input type="text" name="email" placeholder="carol@class.local" required></label>
+      <label>邀请来源 (invite_source)
+        <input type="text" name="invite_source"
+               placeholder="vuln 模式可尝试：x'),('hacker','h@x','admin')-- -">
+      </label>
+      <button class="button-primary" type="submit">提交注册</button>
+    </form>
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+  <aside class="info-card">
+    <h2>已注册的最近 8 位</h2>
+    <table class="data-table">
+      <thead><tr><th>id</th><th>username</th><th>email</th><th>role</th><th>invite_source</th></tr></thead>
+      <tbody>
+      {% for r in last_inserted %}
+        <tr>
+          <td>{{ r.register_id }}</td>
+          <td>{{ r.username }}</td>
+          <td>{{ r.email }}</td>
+          <td>{{ r.role }}</td>
+          <td>{{ r.invite_source }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p class="hint">注入成功的标志：表里多出非自己提交的行（例如 role=admin）。</p>
+  </aside>
+</div>
+{% include 'sqli/partials/hints.html' %}
+{% endblock %}

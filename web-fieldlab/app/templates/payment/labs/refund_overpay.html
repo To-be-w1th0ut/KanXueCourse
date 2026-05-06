@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>退款金额校验</h2>
+    <pre class="code-panel">vuln：refund_amount 客户端可控，不校验上限，可任意金额。
+safe：refund_amount 必须 <= paid_amount - 已退累计。
+PoC 订单：PAY-20002（paid=99）/ PAY-30003（paid=299）
+当前 alice 钱包 balance = {{ wallet.balance }}, credits = {{ wallet.credits }}</pre>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>order_ref<input type="text" name="order_ref" value="PAY-20002"></label>
+      <label>refund_amount<input type="text" name="refund_amount" value="9999"></label>
+      <button class="button-primary" type="submit">申请退款</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>已支付订单</h3>
+    <table class="lab-table"><thead><tr><th>order_ref</th><th>product</th><th>paid</th><th>status</th></tr></thead><tbody>
+      {% for o in orders %}<tr><td>{{ o.order_ref }}</td><td>{{ o.product_name }}</td><td>{{ o.paid_amount }}</td><td>{{ o.status }}</td></tr>{% endfor %}
+    </tbody></table>
+    <h3>退款记录</h3>
+    <table class="lab-table"><thead><tr><th>id</th><th>order</th><th>amount</th><th>mode</th><th>at</th></tr></thead><tbody>
+      {% for r in refunds %}<tr><td>{{ r.refund_id }}</td><td>{{ r.order_ref }}</td><td>{{ r.refund_amount }}</td><td>{{ r.mode }}</td><td class="muted mono">{{ r.created_at }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

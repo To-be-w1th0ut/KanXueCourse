@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>发票下载（仅凭 access_token）</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>access_token<input type="text" name="token" value="{{ token }}" placeholder="例如：tok-2024-0003"></label>
+      <button class="button-primary" type="submit">查发票</button>
+    </form>
+    <pre class="code-panel">已知 token 列表（教学用）：tok-2024-0001 ~ tok-2024-0004
+vuln 模式：仅凭 token 命中即可下载，不查 owner。
+safe 模式：必须 token 命中且 owner = 当前用户（admin 例外）。</pre>
+    {% if invoice %}
+      <div class="preview-stage">
+        <strong>发票 #{{ invoice.invoice_id }}</strong>
+        <p>owner_user_id={{ invoice.owner_user_id }} / amount=¥{{ invoice.amount }}</p>
+        <pre class="code-panel">access_token={{ invoice.access_token }}
+pdf_path={{ invoice.pdf_path }}</pre>
+      </div>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>所有发票（教学展示）</h3>
+    <table class="lab-table"><thead><tr><th>id</th><th>owner</th><th>amount</th><th>token</th></tr></thead><tbody>
+      {% for r in invoices %}<tr><td>{{ r.invoice_id }}</td><td>{{ r.owner_user_id }}</td><td>{{ r.amount }}</td><td><code>{{ r.access_token }}</code></td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

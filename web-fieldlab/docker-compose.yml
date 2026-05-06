@@ -7,13 +7,16 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE:-sql_training}
       MYSQL_USER: ${MYSQL_USER:-labapp}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-labpass}
-    command:
-      - --character-set-server=utf8mb4
-      - --collation-server=utf8mb4_unicode_ci
+    # 教学环境：L19 INTO OUTFILE 需要 mysql 用户能写入 /tmp/lab/
+    command: >
+      bash -lc "mkdir -p /tmp/lab && chmod 1777 /tmp/lab &&
+      exec docker-entrypoint.sh mariadbd
+      --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci"
     ports:
       - "127.0.0.1:3308:3306"
     volumes:
       - mariadb_data:/var/lib/mysql
+      - lab_tmp:/tmp/lab
       - ./db/00_schema.sql:/docker-entrypoint-initdb.d/00_schema.sql:ro
       - ./db/01_seed.sql:/docker-entrypoint-initdb.d/01_seed.sql:ro
     healthcheck:
@@ -63,6 +66,7 @@ services:
       - "127.0.0.1:${HOST_WEB_PORT:-5070}:5000"
     volumes:
       - ./app/data:/app/data
+      - lab_tmp:/tmp/lab
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/healthz', timeout=3)"]
       interval: 10s
@@ -71,3 +75,4 @@ services:
 
 volumes:
   mariadb_data:
+  lab_tmp:

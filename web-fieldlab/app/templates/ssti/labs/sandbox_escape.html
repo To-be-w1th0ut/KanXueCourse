@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>"沙箱"模板预览（vuln 模式仅靠关键字黑名单）</h2>
+    <form method="get" class="form-grid">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>source<textarea name="source" rows="6" placeholder="例如 {% raw %}{{ ().__class__.__mro__[1].__subclasses__() }}{% endraw %}">{{ source }}</textarea></label>
+    </form>
+    <p class="hint">vuln 模式黑名单关键字：<code>import / eval / exec / __import__ / os. / subprocess</code>。<br>
+       但 <code>{% raw %}{{ ().__class__.__mro__ }}{% endraw %}</code> 这类入口完全不在黑名单内。</p>
+    {% if rendered is not none %}<div class="preview-stage"><div class="preview-banner">{{ rendered }}</div></div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

@@ -155,5 +155,79 @@ def seat_burst():
     return render_lab('seat_burst.html', 'seat-burst', state=state, logs=logs, message=message)
 
 
+# =====================================================================
+# 批次 5：Race L05 跨表事务双花
+# =====================================================================
+
+LOCKS['double_spend'] = threading.Lock()
+
+
+def _double_spend_once(amount: float):
+    """vuln：先 SELECT balance，再 sleep，再 INSERT order，再 UPDATE 钱包。"""
+    row = query_one('SELECT balance FROM race_ds_wallets WHERE owner = ?', ('alice',))
+    if not row or row['balance'] < amount:
+        return False
+    time.sleep(0.05)
+    execute(
+        'INSERT INTO race_ds_orders (owner, amount, mode, created_at) VALUES (?, ?, ?, datetime(\'now\'))',
+        ('alice', amount, 'vuln'),
+    )
+    execute('UPDATE race_ds_wallets SET balance = ? WHERE owner = ?',
+            (row['balance'] - amount, 'alice'))
+    return True
+
+
+def _double_spend_safe_once(amount: float):
+    """safe：单条 UPDATE WHERE balance >= amount，按 rowcount 判定，再写订单。"""
+    changed = execute(
+        'UPDATE race_ds_wallets SET balance = balance - ? WHERE owner = ? AND balance >= ?',
+        (amount, 'alice', amount),
+    )
+    if not changed:
+        return False
+    execute(
+        'INSERT INTO race_ds_orders (owner, amount, mode, created_at) VALUES (?, ?, ?, datetime(\'now\'))',
+        ('alice', amount, 'safe'),
+    )
+    return True
+
+
+@bp.route('/labs/race/payment-double-spend', methods=['GET', 'POST'])
+def payment_double_spend():
+    message = None
+    if request.method == 'POST':
+        action = request.form.get('action', 'concurrent')
+        if action == 'reset':
+            execute('DELETE FROM race_ds_orders')
+            execute('UPDATE race_ds_wallets SET balance = 100.0 WHERE owner = ?', ('alice',))
+            message = '已重置：alice 钱包 = 100，订单清空。'
+        else:
+            attempts = int(request.form.get('attempts', '8'))
+            attempts = max(1, min(attempts, 30))
+            amount = float(request.form.get('amount', '40'))
+            if current_mode() == 'vuln':
+                fn = lambda: _double_spend_once(amount)
+            else:
+                fn = lambda: _double_spend_safe_once(amount)
+            success, _ = _run_burst(fn, attempts)
+            wallet = query_one('SELECT balance FROM race_ds_wallets WHERE owner = ?', ('alice',))
+            order_count = query_one(
+                'SELECT COUNT(*) AS c, COALESCE(SUM(amount),0) AS s FROM race_ds_orders'
+            )
+            balance = wallet['balance']
+            paid_total = order_count['s']
+            order_n = order_count['c']
+            detail = (f'attempts={attempts} success={success} '
+                      f'orders={order_n} paid_total={paid_total:.2f} balance={balance:.2f}')
+            _log('payment-double-spend', attempts, success, detail)
+            message = (f'并发 {attempts} 次（amount={amount}），成功 {success} 次；'
+                       f'订单数={order_n}，订单总额={paid_total:.2f}，钱包余额={balance:.2f}')
+    wallet = query_one('SELECT balance FROM race_ds_wallets WHERE owner = ?', ('alice',))
+    orders = query_all('SELECT * FROM race_ds_orders ORDER BY order_id DESC LIMIT 20')
+    logs = query_all("SELECT * FROM race_logs WHERE lab_slug = 'payment-double-spend' ORDER BY log_id DESC LIMIT 8")
+    return render_lab('payment_double_spend.html', 'payment-double-spend',
+                      wallet=wallet, orders=orders, logs=logs, message=message)
+
+
 def domain_taxonomy():
     return build_taxonomy(), '主轴：共享状态类型', '共享状态类型', '窗口类型'

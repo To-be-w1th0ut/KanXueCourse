@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>文件名反射 XSS</h2>
+    <pre class="code-panel">PoC：把文件命名为
+  <img src=x onerror=fieldlab.record('upload-reflected-filename')>.txt
+然后上传。vuln 模式直接 |safe 拼进响应；safe 模式由 Jinja 自动转义。</pre>
+    <form method="post" action="?mode={{ mode }}" enctype="multipart/form-data" class="form-grid">
+      <label>upload_file<input type="file" name="upload_file"></label>
+      <button class="button-primary" type="submit">上传</button>
+    </form>
+    {% if raw_filename %}
+      <div class="result-banner warning">
+        {% if mode == 'vuln' %}
+          已收到文件：{{ raw_filename | safe }}
+        {% else %}
+          {{ safe_message }}
+        {% endif %}
+      </div>
+      <pre class="code-panel">原始 filename（未转义）：{{ raw_filename }}</pre>
+    {% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

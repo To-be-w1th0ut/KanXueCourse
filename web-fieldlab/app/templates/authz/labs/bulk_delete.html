@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>批量清空便签</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>note_ids（逗号或空格分隔）<input type="text" name="note_ids" placeholder="例如：2001 2002"></label>
+      <button class="button-primary" type="submit">批量删除</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <pre class="code-panel">vuln 模式：DELETE FROM auth_notes WHERE note_id IN (...) — 不查 owner。
+safe 模式：补充 AND owner_user_id = ?。
+建议先用 ./scripts/reset_lab.sh authz-notes 复原后再演示。</pre>
+    <h3>当前便签</h3>
+    <table class="lab-table"><thead><tr><th>note_id</th><th>owner</th><th>body</th></tr></thead><tbody>
+      {% for n in notes %}<tr><td>{{ n.note_id }}</td><td>{{ n.owner_user_id }}</td><td>{{ n.body }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

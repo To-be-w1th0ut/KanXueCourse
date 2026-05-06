@@ -1,5 +1,10 @@
 USE sql_training;
 
+-- 教学环境：授予 labapp FILE 权限，用于 L19 INTO OUTFILE / LOAD_FILE 演示。
+-- 真实生产环境严禁这样做（FILE 是 root-only 高危权限）。
+GRANT FILE ON *.* TO 'labapp'@'%';
+FLUSH PRIVILEGES;
+
 INSERT INTO users (username, password, display_name, role, department) VALUES
 ('admin', 'winter2026', 'Zhou Admin', 'administrator', 'Security'),
 ('teacher', 'classroom123', 'Lin Teacher', 'instructor', 'Education'),
@@ -65,4 +70,55 @@ INSERT INTO lab_flags (lab_slug, flag_value, note) VALUES
 ('employee-blind', 'FLAG{boolean_side_channels_still_talk}', '用于布尔盲注演示'),
 ('shipping-time', 'FLAG{time_is_a_data_channel}', '用于时间盲注演示'),
 ('api-json-sqli', 'FLAG{json_is_still_just_input}', '用于 API 注入演示'),
-('orm-misuse', 'FLAG{orm_is_not_a_magic_shield}', '用于 ORM 误用演示');
+('orm-misuse', 'FLAG{orm_is_not_a_magic_shield}', '用于 ORM 误用演示'),
+('insert-register', 'FLAG{insert_values_can_be_extended}', '用于 INSERT 注入演示'),
+('delete-cleanup', 'FLAG{sqli_delete_extra_rows}', '用于 DELETE 注入演示'),
+('header-audit', 'FLAG{header_is_input_too}', '用于 Header 注入演示'),
+('cookie-theme', 'FLAG{cookie_sqli_hidden_theme}', '用于 Cookie 注入演示'),
+('wide-byte', 'FLAG{wide_byte_addslashes_bypass}', '用于宽字节注入演示'),
+('waf-blacklist-bypass', 'FLAG{blacklist_can_always_be_bypassed}', '用于 WAF 黑名单绕过演示'),
+('file-rw-outfile', 'FLAG{file_priv_is_dangerous}', '用于文件读写演示'),
+('oob-dnslog', 'FLAG{oob_channel_for_blind_injection}', '用于 DNSLog 带外演示'),
+('nosql-style', 'FLAG{nosql_ne_bypass_login}', '用于 NoSQL 注入演示'),
+('dialect-diff', 'FLAG{dialects_share_the_same_sin}', '用于方言差异演示');
+
+-- =====================================================================
+-- SQLi 扩充关卡（L13-L22）的种子数据
+-- =====================================================================
+
+INSERT INTO register_users (username, email, role, invite_source) VALUES
+('alice', 'alice@class.local', 'student', 'public'),
+('bob',   'bob@class.local',   'student', 'public');
+
+INSERT INTO cleanup_jobs (target_table, expire_token, operator, note) VALUES
+('audit_logs',    'TOKEN-EXPIRED-001', 'system',  '默认清理项，可被 DELETE 注入扩展。'),
+('saved_filters', 'TOKEN-EXPIRED-002', 'analyst', '分析师手动登记的清理任务。'),
+('audit_logs',    'TOKEN-FLAG-DELETE', 'system',  'FLAG{sqli_delete_extra_rows}');
+
+INSERT INTO audit_access_logs (visitor_ua, visit_path) VALUES
+('Mozilla/5.0 (Macintosh)', '/dashboard'),
+('curl/8.4.0',              '/labs');
+
+INSERT INTO theme_preferences (theme_code, theme_label, is_active) VALUES
+('aurora', '极光主题',                              1),
+('amber',  '琥珀主题',                              1),
+('hidden', 'FLAG{cookie_sqli_hidden_theme}',       0);
+
+INSERT INTO gbk_legacy_articles (keyword, title, body, secret_tag) VALUES
+('welcome',   '旧版宽字节系统欢迎语', '本系统沿用 GBK 编码，请使用经典浏览器访问。', ''),
+('changelog', '版本更新记录',         '2008 年起未再升级。',                          'FLAG{wide_byte_addslashes_bypass}');
+
+INSERT INTO nosql_docs (collection, document_json) VALUES
+('users',  '{"username":"admin","password":"super-secret","role":"admin","note":"FLAG{nosql_ne_bypass_login}"}'),
+('users',  '{"username":"alice","password":"alice123","role":"student"}'),
+('orders', '{"order_no":"O-9001","amount":299,"customer":"alice"}');
+
+INSERT INTO dialect_samples (dialect_name, feature, sample_payload, note) VALUES
+('MySQL',      'sleep',            'SELECT SLEEP(2)',                'MySQL/MariaDB 通用'),
+('MySQL',      'concat',           'CONCAT(a, b)',                   ''),
+('PostgreSQL', 'sleep',            'SELECT pg_sleep(2)',             'PG 专用'),
+('PostgreSQL', 'concat',           'a || b',                         '字符串拼接'),
+('SQL Server', 'sleep',            "WAITFOR DELAY '0:0:2'",          'MSSQL 专用'),
+('SQL Server', 'cmd',              'EXEC xp_cmdshell ''dir''',       '高权限可 RCE'),
+('Oracle',     'sleep',            'DBMS_PIPE.RECEIVE_MESSAGE(...)', '不易被发现'),
+('SQLite',     'sleep_workaround', 'SELECT randomblob(1e9)',         'SQLite 无 sleep，用计算消耗时间');

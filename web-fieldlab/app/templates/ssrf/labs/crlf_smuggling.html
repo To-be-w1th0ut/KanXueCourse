@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>裸 socket 抓取器（vuln 模式不过滤 path 中的控制字符）</h2>
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <label>host<input type="text" name="host" value="{{ host }}"></label>
+      <label>port<input type="number" name="port" value="{{ port }}"></label>
+      <label>path（可含 %0d%0a 走私额外 header）<textarea name="path" rows="4">{{ path }}</textarea></label>
+      <button class="button-primary" type="submit">发送原始请求</button>
+    </form>
+    <pre class="code-panel">攻击思路：path 中走私 header
+  /internal/echo-headers HTTP/1.1%0d%0aX-Smuggled: yes
+  /internal/secret-export%0d%0aX-Internal-Token: lab-internal-token
+safe 模式：拒绝 path 含任何 \r \n 或其编码形式。</pre>
+    {% if response_preview %}
+      <h3>raw_request</h3>
+      <pre class="code-panel">{{ response_preview.raw_request }}</pre>
+      <h3>raw_response</h3>
+      <pre class="code-panel">{{ response_preview.raw_response }}</pre>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

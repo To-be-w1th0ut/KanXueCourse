@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+{% include 'authz/toolbar.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>"上线前忘删的" 调试接口</h2>
+    <form method="get" class="form-grid inline-form">
+      <input type="hidden" name="mode" value="{{ mode }}">
+      <label>table<input type="text" name="table" value="{{ table }}" placeholder="例如：auth_users / auth_invoices"></label>
+      <button class="button-primary" type="submit">dump</button>
+    </form>
+    <pre class="code-panel">允许的表（教学白名单）：{{ allowed_tables }}
+vuln 模式：直接返回最多 50 行。
+safe 模式：必须带请求头 X-Debug-Token: lab-debug-token，否则拒绝。
+（用 curl 演示：curl -H 'X-Debug-Token: lab-debug-token' '...?mode=safe&table=auth_users'）</pre>
+    {% if rows %}
+      <pre class="code-panel">{{ rows | length }} rows:
+{% for r in rows %}{{ r | tojson }}
+{% endfor %}</pre>
+    {% endif %}
+    {% if error %}<pre class="error-box">{{ error }}</pre>{% endif %}
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}

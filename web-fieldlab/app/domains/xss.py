@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import html
+import re
+import secrets
 from urllib.parse import urlparse
 
 import bleach
 import markdown
-from flask import Blueprint, jsonify, render_template, request
-from markupsafe import Markup
+from flask import Blueprint, jsonify, make_response, render_template, request
+from markupsafe import Markup, escape
 
 from content_store import execute, query_all, query_one
 from shared import current_mode
@@ -204,6 +206,222 @@ def faux_fix():
             filtered_payload = payload
             rendered_payload = payload
     return render_lab('faux_fix.html', 'faux-fix', payload=payload, filtered_payload=filtered_payload, rendered_payload=rendered_payload)
+
+
+# =====================================================================
+# 批次 2：XSS L13-L22 共 10 个新关卡
+# =====================================================================
+
+# ---------- L13 CSP nonce 复用绕过 ----------
+@bp.route('/labs/xss/csp-nonce-bypass')
+def csp_nonce_bypass():
+    """教学：CSP `script-src 'nonce-xxx'` 看似严格，但页面把 nonce 同步暴露在
+    DOM 的 data-nonce 属性里，攻击者可以通过 DOM clobbering 读取 nonce 并
+    构造一个新的 <script nonce="…"> 通过 CSP 校验。
+    """
+    nonce = secrets.token_urlsafe(12)
+    payload = request.args.get('payload', '')
+    rendered = Markup(payload) if payload and current_mode() == 'vuln' else (escape(payload) if payload else '')
+    response = make_response(render_lab(
+        'csp_nonce_bypass.html', 'csp-nonce-bypass',
+        nonce=nonce, payload=payload, rendered=rendered,
+    ))
+    if current_mode() == 'vuln':
+        # ❌ vuln：CSP 用 nonce 但页面上又把 nonce 暴露在 data-nonce，攻击可绕
+        response.headers['Content-Security-Policy'] = (
+            f"default-src 'self'; script-src 'nonce-{nonce}'"
+        )
+    else:
+        # ✅ safe：仍用 nonce，但模板里不再回显 nonce（见模板 mode 分支）
+        response.headers['Content-Security-Policy'] = (
+            f"default-src 'self'; script-src 'nonce-{nonce}'; "
+            "object-src 'none'; base-uri 'none'"
+        )
+    return response
+
+
+# ---------- L14 mXSS：sanitizer 后 DOM 解析阶段变形 ----------
+def _toy_strip_script(value: str) -> str:
+    """模拟『土法 sanitizer』：只看字面是否包含 <script，看不到就放行。
+
+    不做 HTML 解析，因此对 <noscript>/<style>/属性内的 < > 都束手无策。
+    """
+    return re.sub(r'<\s*/?\s*script[^>]*>', '', value, flags=re.IGNORECASE)
+
+
+@bp.route('/labs/xss/mxss-sanitizer', methods=['GET', 'POST'])
+def mxss_sanitizer():
+    if request.method == 'POST':
+        title = (request.form.get('title') or 'Untitled')[:80]
+        raw_html = request.form.get('raw_html', '')
+        if current_mode() == 'safe':
+            raw_html = bleach.clean(
+                raw_html, tags=SAFE_TAGS, attributes=SAFE_ATTRS,
+                protocols=SAFE_PROTOCOLS, strip=True,
+            )
+        else:
+            raw_html = _toy_strip_script(raw_html)
+        execute(
+            "INSERT INTO xss_mxss_drafts (title, raw_html, created_at) "
+            "VALUES (?, ?, datetime('now'))",
+            (title, raw_html),
+        )
+    rows = query_all(
+        'SELECT draft_id, title, raw_html, created_at FROM xss_mxss_drafts '
+        'ORDER BY draft_id DESC LIMIT 8'
+    )
+    drafts = [
+        {**row, 'rendered': Markup(row['raw_html'])}
+        for row in rows
+    ]
+    return render_lab('mxss_sanitizer.html', 'mxss-sanitizer', drafts=drafts)
+
+
+# ---------- L15 客户端模板拼接（CSTI） ----------
+@bp.route('/labs/xss/client-template')
+def client_template():
+    """教学：前端用模板字符串拼 HTML，等同 SSTI。
+
+    后端只提供 JSON（/api/cards/search 已存在），漏洞完全发生在浏览器端，
+    不同 mode 仅切换前端渲染策略。
+    """
+    return render_lab('client_template.html', 'client-template')
+
+
+# ---------- L16 jQuery $() 选择器陷阱 ----------
+@bp.route('/labs/xss/jquery-sink')
+def jquery_sink():
+    """教学：jQuery `$(string)` 在 string 以 < 开头时会把它当 HTML 解析。"""
+    return render_lab('jquery_sink.html', 'jquery-sink')
+
+
+# ---------- L17 data: 协议跳板 ----------
+def _vuln_check_proto(url: str) -> bool:
+    """vuln 模式只过滤 javascript:，data:/blob:/file: 都漏掉了。"""
+    return not url.lower().lstrip().startswith('javascript:')
+
+
+def _safe_check_proto(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.scheme.lower() in {'http', 'https', 'mailto'}
+
+
+@bp.route('/labs/xss/data-uri')
+def data_uri():
+    raw_url = request.args.get('image_url', '')
+    accepted = False
+    error = None
+    if raw_url:
+        try:
+            accepted = _vuln_check_proto(raw_url) if current_mode() == 'vuln' else _safe_check_proto(raw_url)
+            if not accepted:
+                error = '当前过滤策略拒绝了该 URL。'
+        except Exception as exc:
+            error = str(exc)
+    return render_lab(
+        'data_uri.html', 'data-uri',
+        image_url=raw_url, accepted=accepted, error=error,
+    )
+
+
+# ---------- L18 事件属性黑名单绕过 ----------
+_EVENT_BLACKLIST_VULN = re.compile(r'\s+(onerror|onclick)\s*=', re.IGNORECASE)
+
+
+@bp.route('/labs/xss/blacklist-event')
+def blacklist_event():
+    raw = request.args.get('comment', '')
+    if not raw:
+        return render_lab('blacklist_event.html', 'blacklist-event',
+                          comment='', filtered='', rendered=None)
+    if current_mode() == 'vuln':
+        # ❌ 黑名单：只删 onerror/onclick，遗漏 onmouseover/ontoggle/...
+        filtered = _EVENT_BLACKLIST_VULN.sub(' ', raw)
+        rendered = Markup(filtered)
+    else:
+        # ✅ 白名单清洗
+        filtered = bleach.clean(
+            raw, tags=SAFE_TAGS, attributes=SAFE_ATTRS,
+            protocols=SAFE_PROTOCOLS, strip=True,
+        )
+        rendered = Markup(filtered)
+    return render_lab(
+        'blacklist_event.html', 'blacklist-event',
+        comment=raw, filtered=filtered, rendered=rendered,
+    )
+
+
+# ---------- L19 document.write DOM XSS ----------
+@bp.route('/labs/xss/document-write')
+def document_write():
+    """教学：404 帮助页用 document.write 把 search/referrer 拼进 DOM。"""
+    return render_lab('document_write.html', 'document-write')
+
+
+# ---------- L20 Cookie 反射型 XSS ----------
+@bp.route('/labs/xss/cookie-reflect')
+def cookie_reflect():
+    welcome = request.cookies.get('welcome', '')
+    if current_mode() == 'vuln':
+        rendered = Markup(welcome) if welcome else None  # ❌ 直接拼回页面
+    else:
+        rendered = escape(welcome) if welcome else None  # ✅ 输出编码
+    response = make_response(render_lab(
+        'cookie_reflect.html', 'cookie-reflect',
+        welcome=welcome, rendered=rendered,
+    ))
+    if 'welcome' not in request.cookies:
+        # 给一个无害的默认值，便于学员观察 cookie 来源
+        response.set_cookie('welcome', 'Hello FieldLab', max_age=3600)
+    return response
+
+
+# ---------- L21 第三方 callback 挂件 ----------
+_CALLBACK_NAME_RE = re.compile(r'^[A-Za-z_][A-Za-z0-9_]{0,30}$')
+
+
+@bp.route('/labs/xss/callback-widget')
+def callback_widget():
+    """教学：?callback=foo 被反射进 inline script `foo()`。"""
+    callback = request.args.get('callback', '')
+    inline_script = None
+    accepted = False
+    error = None
+    if callback:
+        if current_mode() == 'vuln':
+            # ❌ 不校验，直接拼进 inline script
+            inline_script = Markup(f'<script>window.fieldlab && fieldlab.record("callback-widget", "called {callback}");{callback}();</script>')
+            accepted = True
+        else:
+            if _CALLBACK_NAME_RE.match(callback):
+                inline_script = Markup(f'<script>window.fieldlab && fieldlab.record("callback-widget", "called {escape(callback)}");</script>')
+                accepted = True
+            else:
+                error = 'callback 名仅允许 [A-Za-z_][A-Za-z0-9_]*。'
+    return render_lab(
+        'callback_widget.html', 'callback-widget',
+        callback=callback, inline_script=inline_script,
+        accepted=accepted, error=error,
+    )
+
+
+# ---------- L22 Trusted Types 演示 ----------
+@bp.route('/labs/xss/trusted-types')
+def trusted_types():
+    response = make_response(render_lab('trusted_types.html', 'trusted-types'))
+    if current_mode() == 'vuln':
+        # ❌ trusted-types * 等于完全没开
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; require-trusted-types-for 'script'; "
+            "trusted-types *"
+        )
+    else:
+        # ✅ 只允许具名 policy，禁止 default policy
+        response.headers['Content-Security-Policy'] = (
+            "default-src 'self'; require-trusted-types-for 'script'; "
+            "trusted-types fieldlab-strict 'allow-duplicates'"
+        )
+    return response
 
 
 def domain_taxonomy():

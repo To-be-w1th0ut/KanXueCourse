@@ -17,11 +17,6 @@
   - JSONP
   - 条件竞争
 
-## 兼容保留
-
-- `legacy/sqli-fieldlab/`：早期独立 SQLi 靶场
-- `legacy/xss-fieldlab/`：早期独立 XSS 靶场
-
 ## 推荐使用方式
 
 优先使用统一版：
@@ -40,10 +35,7 @@ docker compose up --build
 
 ```text
 KanXueCourse/
-├── web-fieldlab/
-└── legacy/
-    ├── sqli-fieldlab/
-    └── xss-fieldlab/
+└── web-fieldlab/
 ```
 
 ## 说明

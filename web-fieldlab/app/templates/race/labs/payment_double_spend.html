@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}{{ lab.title }}{% endblock %}
+{% block content %}
+{% include 'shared_lab_header.html' %}
+<div class="workbench two-col wide-layout">
+  <section class="console-card">
+    <h2>跨表事务双花（钱包 + 订单分两步）</h2>
+    <pre class="code-panel">vuln：SELECT balance → sleep → INSERT order → UPDATE balance
+   并发下多笔请求都会读到同一份 balance，结果是订单总额 > 起始余额。
+safe：UPDATE balance = balance - amount WHERE balance >= amount
+   按 rowcount 判定是否扣款成功，再写订单。
+
+观察判据：
+  ◎ 起始 balance = 100，amount = 40
+  ◎ vuln 期望：success ≈ 3-N（>=3），订单总额 > 100，balance 可能为负
+  ◎ safe  期望：success == 2，订单总额 == 80，balance == 20</pre>
+
+    <h3>当前状态</h3>
+    <pre class="code-panel">balance = {{ '%.2f' % wallet.balance }}
+orders  = {{ orders | length }} 条 / 总额 = {{ '%.2f' % (orders | sum(attribute='amount')) }}</pre>
+
+    <form method="post" action="?mode={{ mode }}" class="inline-button-row">
+      <input type="hidden" name="action" value="reset">
+      <button class="button-secondary" type="submit">重置（balance=100）</button>
+    </form>
+
+    <form method="post" action="?mode={{ mode }}" class="form-grid">
+      <input type="hidden" name="action" value="concurrent">
+      <label>attempts<input type="number" name="attempts" value="8" min="1" max="30"></label>
+      <label>amount<input type="text" name="amount" value="40"></label>
+      <button class="button-primary" type="submit">并发购物</button>
+    </form>
+
+    {% if message %}<div class="result-banner warning">{{ message }}</div>{% endif %}
+
+    <h3>最近订单</h3>
+    <table class="lab-table"><thead><tr><th>id</th><th>owner</th><th>amount</th><th>mode</th><th>at</th></tr></thead><tbody>
+      {% for o in orders %}<tr><td>{{ o.order_id }}</td><td>{{ o.owner }}</td><td>{{ o.amount }}</td><td>{{ o.mode }}</td><td class="muted mono">{{ o.created_at }}</td></tr>{% endfor %}
+    </tbody></table>
+
+    <h3>历史并发日志</h3>
+    <table class="lab-table"><thead><tr><th>id</th><th>attempts</th><th>success</th><th>detail</th></tr></thead><tbody>
+      {% for l in logs %}<tr><td>{{ l.log_id }}</td><td>{{ l.attempts }}</td><td>{{ l.success_count }}</td><td class="muted small">{{ l.detail }}</td></tr>{% endfor %}
+    </tbody></table>
+  </section>
+</div>
+{% include 'shared_hints.html' %}
+{% endblock %}
